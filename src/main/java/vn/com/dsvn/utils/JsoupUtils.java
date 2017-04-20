@@ -16,7 +16,7 @@ public class JsoupUtils {
 	public static final String USER_AGENT = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 "
 			+ "(KHTML, like Gecko) Chrome/30.0.1599.114 Safari/537.36";
 	public static final int TIMEOUT = 30000;
-	private static final int numMiniSecond = 2000;
+	private static final int numMiniSecond = 0;
 	static Logger logger = LoggerFactory.getLogger(JsoupUtils.class);
 
 	/**
