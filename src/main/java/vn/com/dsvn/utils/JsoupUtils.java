@@ -54,9 +54,12 @@ public class JsoupUtils {
 		try {
 			start = System.currentTimeMillis();
 			Connection connect = Jsoup.connect(uri.toASCIIString());
-			for (Map.Entry<String, String> header : headers.entrySet()) {
-				connect.header(header.getKey(), header.getValue());
+			if (headers != null) {
+				for (Map.Entry<String, String> header : headers.entrySet()) {
+					connect.header(header.getKey(), header.getValue());
+				}
 			}
+
 			doc = connect.userAgent(USER_AGENT).timeout(TIMEOUT).get();
 			finish = System.currentTimeMillis();
 			logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
@@ -101,10 +104,15 @@ public class JsoupUtils {
 		try {
 			start = System.currentTimeMillis();
 			Connection connect = Jsoup.connect(uri.toASCIIString());
-			for (Map.Entry<String, String> header : headers.entrySet()) {
-				connect.header(header.getKey(), header.getValue());
+			if (headers != null) {
+				for (Map.Entry<String, String> header : headers.entrySet()) {
+					connect.header(header.getKey(), header.getValue());
+				}
 			}
-			doc = connect.data(datas).userAgent(USER_AGENT).timeout(TIMEOUT).post();
+			if (datas != null) {
+				connect = connect.data(datas);
+			}
+			doc = connect.userAgent(USER_AGENT).timeout(TIMEOUT).post();
 			finish = System.currentTimeMillis();
 			logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
 		} catch (IOException e) {
@@ -116,10 +124,15 @@ public class JsoupUtils {
 				try {
 					start = System.currentTimeMillis();
 					Connection connect = Jsoup.connect(uri.toASCIIString());
-					for (Map.Entry<String, String> header : headers.entrySet()) {
-						connect.header(header.getKey(), header.getValue());
+					if (headers != null) {
+						for (Map.Entry<String, String> header : headers.entrySet()) {
+							connect.header(header.getKey(), header.getValue());
+						}
 					}
-					doc = connect.data(datas).userAgent(USER_AGENT).timeout(TIMEOUT).post();
+					if (datas != null) {
+						connect = connect.data(datas);
+					}
+					doc = connect.userAgent(USER_AGENT).timeout(TIMEOUT).post();
 					finish = System.currentTimeMillis();
 					logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
 				} catch (IOException e1) {
