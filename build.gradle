@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 
 sourceCompatibility = 1.8
 version = '1.0'
-archivesBaseName = 'BDSCrawler'
+archivesBaseName = 'ZitecCrawler'
 jar {
 	doFirst {
         from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } } 
@@ -12,7 +12,7 @@ jar {
     manifest {
         attributes 'Implementation-Title': 'Gradle Quickstart',
                    'Implementation-Version': version,
-                   'Main-Class': 'vn.com.dsvn.crawl.zillow.ZillowRequestStatistic'
+                   'Main-Class': 'vn.com.dsvn.crawl.mechanical.zitec.ZitecShop'
     }
 }
 
