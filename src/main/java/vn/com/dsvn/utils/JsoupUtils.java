@@ -16,6 +16,7 @@ public class JsoupUtils {
 	public static final String USER_AGENT = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 "
 			+ "(KHTML, like Gecko) Chrome/30.0.1599.114 Safari/537.36";
 	public static final int TIMEOUT = 30000;
+	private static final int numMiniSecond = 2000;
 	static Logger logger = LoggerFactory.getLogger(JsoupUtils.class);
 
 	/**
@@ -36,17 +37,13 @@ public class JsoupUtils {
 		return getDoc(url, null);
 	}
 
-	public static Document getDoc(String url,
-			Map<String, String> headers) /*
-											 * throws IOException,
-											 * SocketException,
-											 * MalformedURLException
-											 */ {
+	public static Document getDoc(String url, Map<String, String> headers) {
 		URI uri = null;
 		try {
 			uri = new URI(url);
 		} catch (URISyntaxException e) {
 			logger.error("ERROR_URL :" + url, e);
+			sleep(numMiniSecond);
 			return null;
 		}
 		Document doc = null;
@@ -78,6 +75,7 @@ public class JsoupUtils {
 					finish = System.currentTimeMillis();
 					logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
 					logger.error(String.format("REQUEST_TIMEOUT (%d ms): %s", (finish - start), url), e1);
+					sleep(numMiniSecond);
 					return null;
 				}
 			} else {
@@ -87,7 +85,7 @@ public class JsoupUtils {
 				logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url));
 			}
 		}
-
+		sleep(numMiniSecond);
 		return doc;
 	}
 
@@ -97,6 +95,7 @@ public class JsoupUtils {
 			uri = new URI(url);
 		} catch (URISyntaxException e) {
 			logger.error(String.format("ERROR_URL :%s, Data: %s", url, datas), e);
+			sleep(numMiniSecond);
 			return null;
 		}
 		Document doc = null;
@@ -140,6 +139,7 @@ public class JsoupUtils {
 					logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
 					logger.error(String.format("REQUEST_TIMEOUT (%d ms): %s. Data: %s", (finish - start), url, datas),
 							e1);
+					sleep(numMiniSecond);
 					return null;
 				}
 			} else {
@@ -149,7 +149,16 @@ public class JsoupUtils {
 				logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url));
 			}
 		}
-
+		sleep(numMiniSecond);
 		return doc;
+	}
+
+	public static void sleep(int numMnSecond) {
+		try {
+			Thread.sleep(numMnSecond);
+			logger.info("Sleep time: " + numMnSecond + " (ms)");
+		} catch (InterruptedException e) {
+			logger.error("ERROR SLEEP", e);
+		}
 	}
 }
