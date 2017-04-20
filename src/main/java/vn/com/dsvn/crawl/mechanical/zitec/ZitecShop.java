@@ -128,7 +128,7 @@ public class ZitecShop {
 			logger.error("PARSE DOMAIN FAIL.", e);
 		}
 		DSFileUtils.writeLine(cateLinks, fOut + "zitec.cate.txt", false);
-		List<List<String>> smallerLists = Lists.partition(cateLinks, Math.abs(cateLinks.size() / 15) + 1);
+		List<List<String>> smallerLists = Lists.partition(cateLinks, Math.abs(cateLinks.size() / 14) + 1);
 		for (int i = 0; i < smallerLists.size(); i++) {
 			DSFileUtils.writeLine(smallerLists.get(i), fOut + "zitec.cate." + (i + 1) + ".txt", false);
 		}
