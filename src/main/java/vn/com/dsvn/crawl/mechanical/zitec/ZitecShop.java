@@ -51,6 +51,17 @@ public class ZitecShop {
 		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
 	}
 
+	public ZitecShop(String fConfig) {
+		prof = new Properties();
+		try {
+			prof.load(new FileInputStream(new File(fConfig)));
+		} catch (IOException e) {
+			logger.error("File conf/zitec.properties Not Found", e);
+			return;
+		}
+		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
+	}
+
 	private void getProductLinks(File fIn) {
 		long start = System.currentTimeMillis();
 		File fProd = new File(fOut + "zitec.prod.link.tsv");
@@ -367,10 +378,9 @@ public class ZitecShop {
 	// }
 
 	public static void main(String[] args) {
-//		 args = new String[] { "-t", "cate" };
+		// args = new String[] { "-t", "cate" };
 		// args = new String[] { "-t", "prod", "-i",
 		// "/data/workspace/BDSCrawler/data/zitec/zitec.cate.1.txt" };
-		ZitecShop zitec = new ZitecShop();
 
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
@@ -378,6 +388,7 @@ public class ZitecShop {
 		Options options = new Options();
 		options.addOption("t", "type", true, "{cate: get category, prod: get product}");
 		options.addOption("i", "input", true, "file category links");
+		options.addOption("c", "config", true, "file config");
 		CommandLine cmd = null;
 		try {
 			cmd = parser.parse(options, args);
@@ -385,6 +396,15 @@ public class ZitecShop {
 			logger.error("Parse args false", e);
 			formatter.printHelp("ZitecCrawler", options);
 		}
+
+		if (!cmd.hasOption("c")) {
+			logger.error("Don't have option type");
+			formatter.printHelp("ZitecCrawler", options);
+			return;
+		}
+		String fConfig = cmd.getOptionValue("c");
+		ZitecShop zitec = new ZitecShop(fConfig);
+
 		if (!cmd.hasOption("t")) {
 			logger.error("Don't have option type");
 			formatter.printHelp("ZitecCrawler", options);
