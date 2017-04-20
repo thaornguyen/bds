@@ -55,6 +55,7 @@ public class ZitecShop {
 		prof = new Properties();
 		try {
 			prof.load(new FileInputStream(new File(fConfig)));
+			logger.info("Load config file: " + fConfig);
 		} catch (IOException e) {
 			logger.error("File conf/zitec.properties Not Found", e);
 			return;
@@ -63,6 +64,7 @@ public class ZitecShop {
 	}
 
 	private void getProductLinks(File fIn) {
+		logger.info("START APP: "+fIn);
 		long start = System.currentTimeMillis();
 		File fProd = new File(fOut + "zitec.prod.link.tsv");
 		List<String> cateLinks = new ArrayList<>();
@@ -100,6 +102,7 @@ public class ZitecShop {
 		}
 		long start3 = System.currentTimeMillis();
 		logger.info("Total Time Get Product: " + (start3 - start2) / 1000 + " ms");
+		logger.info("FINISH APP");
 	}
 
 	private void getCateLinks() {
