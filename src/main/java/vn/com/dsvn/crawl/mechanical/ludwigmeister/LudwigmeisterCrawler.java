@@ -13,6 +13,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import com.sun.xml.internal.bind.v2.TODO;
 
 import vn.com.dsvn.utils.DSFileUtils;
@@ -34,6 +35,7 @@ public class LudwigmeisterCrawler {
 	}
 
 	public void getCates() {
+		List<String> urlSubCates = new ArrayList<>();
 		List<String> urlCates = parseCates();
 		urlCates.parallelStream().forEach(urlCate -> {
 			List<String> urlSubCate2s = parseSubCates(urlCate);
@@ -44,13 +46,18 @@ public class LudwigmeisterCrawler {
 					if (!isCheck) {
 						List<String> urlSubCate4s = parseSubCates(urlSubCate3);
 						urlSubCate4s.parallelStream().forEach(urlSubCate4 -> {
-							DSFileUtils.write(urlSubCate4, fOut + "ludw.cate.txt", true);
+							urlSubCates.add(urlSubCate4);
 						});
 					}
 				});
 
 			});
 		});
+		DSFileUtils.writeLine(urlSubCates, fOut + "ludw.cate.txt", true);
+		List<List<String>> smallerLists = Lists.partition(urlSubCates, Math.abs(urlSubCates.size() / 2) + 1);
+		for (int i = 0; i < smallerLists.size(); i++) {
+			DSFileUtils.writeLine(smallerLists.get(i), fOut + "zitec.cate." + (i + 1) + ".txt", false);
+		}
 	}
 
 	/**
@@ -131,12 +138,13 @@ public class LudwigmeisterCrawler {
 		return true;
 	}
 
-	public List<String> getProdsFromCate(String cateLink) {
-		cateLink = "https://www.ludwigmeister.de/produkte/gehaeusezubehoer/52162";
+	public Set<String> getProdsFromCate(String cateLink) {
+		// cateLink =
+		// "https://www.ludwigmeister.de/produkte/gehaeusezubehoer/52162";
 		Set<String> prodLinks = new HashSet<>();
 		Document doc = JsoupUtils.getDoc(cateLink);
 		String label = doc.select("#results-label").text();
-		logger.info(String.format("SubCateLink: %s , Label: %s", cateLink, label));
+		logger.info(String.format("CateLink: %s , Label: %s", cateLink, label));
 		Elements els = doc.select(".produktkachel");
 		for (Element el : els) {
 			String prodLink = el.absUrl("data-href");
@@ -148,6 +156,35 @@ public class LudwigmeisterCrawler {
 			}
 			prodLinks.add(el.absUrl("href"));
 		}
+		int bufSize = 25;
+		if (els.size() % bufSize != 0) {
+			logger.info(String.format("CateLink: %s , NumProd: %d", cateLink, prodLinks.size()));
+			return prodLinks;
+		}
+		int indexPage = 2;
+		do {
+			String url = cateLink + "?page=" + indexPage;
+			doc = JsoupUtils.getDoc(url);
+			els = doc.select(".produktkachel");
+			for (Element el : els) {
+				String prodLink = el.absUrl("data-href");
+				String text = el.select(".zu_den_varianten").text();
+				if (text == null || text.isEmpty()) {
+					prodLinks.add(prodLink);
+				} else {
+					prodLinks.addAll(getProdsFromSubcate(prodLink));
+				}
+				prodLinks.add(el.absUrl("href"));
+			}
+
+			if (els.size() % bufSize != 0) {
+				break;
+			}
+
+			indexPage++;
+		} while (true);
+		logger.info(String.format("CateLink: %s , NumProd: %d", cateLink, prodLinks.size()));
+		return prodLinks;
 	}
 
 	public Set<String> getProdsFromSubcate(String subCateLink) {
@@ -155,7 +192,7 @@ public class LudwigmeisterCrawler {
 		Document doc = JsoupUtils.getDoc(subCateLink);
 		String label = doc.select("#results-label").text();
 		logger.info(String.format("SubCateLink: %s , Label: %s", subCateLink, label));
-		Elements els = doc.select(".produktkachel a");
+		Elements els = doc.select(".produktdetailzeile a");
 		for (Element el : els) {
 			prodLinks.add(el.absUrl("href"));
 		}
@@ -169,7 +206,7 @@ public class LudwigmeisterCrawler {
 		do {
 			String url = subCateLink + "?page=" + indexPage;
 			doc = JsoupUtils.getDoc(url);
-			els = doc.select(".produktkachel a");
+			els = doc.select(".produktdetailzeile a");
 			for (Element el : els) {
 				prodLinks.add(el.absUrl("href"));
 			}
@@ -187,8 +224,8 @@ public class LudwigmeisterCrawler {
 
 	public static void main(String[] args) {
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
-		// ludwig.getCates();
-		ludwig.getProds("");
+		ludwig.getCates();
+		// ludwig.getProdsFromCate("");
 		System.out.println("FINISH");
 	}
 }

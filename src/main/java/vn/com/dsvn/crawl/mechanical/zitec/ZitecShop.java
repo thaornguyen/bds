@@ -48,7 +48,6 @@ public class ZitecShop {
 			logger.error("File conf/zitec.properties Not Found", e);
 			return;
 		}
-		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
 	}
 
 	public ZitecShop(String fConfig) {
@@ -60,7 +59,7 @@ public class ZitecShop {
 			logger.error("File conf/zitec.properties Not Found", e);
 			return;
 		}
-		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
+//		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
 	}
 
 	private void getProductLinks(File fIn) {
