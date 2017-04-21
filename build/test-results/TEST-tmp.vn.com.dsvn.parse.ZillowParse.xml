@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="tmp.vn.com.dsvn.parse.ZillowParse" tests="1" skipped="0" failures="0" errors="0" timestamp="2017-04-20T07:31:46" hostname="thaonp-cpt" time="0.015">
+  <properties/>
+  <testcase name="testGetNumBedBathSqft" classname="tmp.vn.com.dsvn.parse.ZillowParse" time="0.015"/>
+  <system-out><![CDATA[0.5
+489
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

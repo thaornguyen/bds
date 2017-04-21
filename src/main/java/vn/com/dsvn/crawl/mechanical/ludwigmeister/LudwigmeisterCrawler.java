@@ -65,7 +65,7 @@ public class LudwigmeisterCrawler {
 			});
 		});
 		DSFileUtils.writeLine(urlSubCates, fOut + "ludw.cate.txt", true);
-		List<List<String>> smallerLists = Lists.partition(urlSubCates, Math.abs(urlSubCates.size() / 2) + 1);
+		List<List<String>> smallerLists = Lists.partition(urlSubCates, Math.abs(urlSubCates.size() / 5) + 1);
 		for (int i = 0; i < smallerLists.size(); i++) {
 			DSFileUtils.writeLine(smallerLists.get(i), fOut + "ludw.cate." + (i + 1) + ".txt", false);
 		}
@@ -353,8 +353,8 @@ public class LudwigmeisterCrawler {
 		}
 	}
 	public static void main(String[] args) {
-		// args = new String[]{"-t","cate"};
-		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.1.txt" };
+//		 args = new String[]{"-t","cate"};
+//		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.1.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
