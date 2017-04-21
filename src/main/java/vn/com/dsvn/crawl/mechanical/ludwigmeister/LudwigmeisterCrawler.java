@@ -22,10 +22,12 @@ import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.sun.xml.internal.bind.v2.TODO;
 
 import vn.com.dsvn.utils.DSFileUtils;
 import vn.com.dsvn.utils.JsoupUtils;
@@ -168,7 +170,7 @@ public class LudwigmeisterCrawler {
 				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
 			});
 			logger.info("Category: " + count++ + "/" + cateLinks.size());
-//			break;
+			// break;
 		}
 		long start2 = System.currentTimeMillis();
 		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " ms");
@@ -232,6 +234,14 @@ public class LudwigmeisterCrawler {
 		Document doc = JsoupUtils.getDoc(cateLink);
 		String label = doc.select("#results-label").text();
 		logger.info(String.format("CateLink: %s , Label: %s", cateLink, label));
+		String sProd = label.substring(label.indexOf("Produkten"), label.indexOf("Varianten")).replace("mit", "")
+				.replace("Produkten", "").replaceAll("\\s+", "").trim().replaceAll("\\s+", "").trim();
+		int nProd = 0;
+		try {
+			nProd = Integer.parseInt(sProd);
+		} catch (Exception e) {
+			logger.error("Parse Label False. Label: " + label + ", Link: " + cateLink, e);
+		}
 		Elements els = doc.select(".produktkachel");
 		for (Element el : els) {
 			String prodLink = el.absUrl("data-href");
@@ -247,31 +257,50 @@ public class LudwigmeisterCrawler {
 		}
 		int bufSize = 25;
 		if (els.size() % bufSize != 0) {
-			logger.info(String.format("CateLink: %s , NumProd: %d", cateLink, prodLinks.size()));
+			logger.info(String.format("CateLink: %s , NumCateProd: %d", cateLink, prodLinks.size()));
 			return prodLinks;
 		}
-		int indexPage = 2;
-		do {
-			String url = cateLink + "?page=" + indexPage;
-			doc = JsoupUtils.getDoc(url);
-			els = doc.select(".produktkachel");
-			for (Element el : els) {
-				String prodLink = el.absUrl("data-href");
-				String text = el.select(".zu_den_varianten").text();
-				if (text == null || text.isEmpty()) {
-					prodLinks.add(prodLink);
-				} else {
-					prodLinks.addAll(getProdsFromSubcate(prodLink));
+
+		if (nProd > 0) {
+			for (int indexPage = 2; indexPage <= Math.abs(nProd / bufSize) + 1; indexPage++) {
+				String url = cateLink + "?page=" + indexPage;
+				doc = JsoupUtils.getDoc(url);
+				els = doc.select(".produktkachel");
+				for (Element el : els) {
+					String prodLink = el.absUrl("data-href");
+					String text = el.select(".zu_den_varianten").text();
+					if (text == null || text.isEmpty()) {
+						prodLinks.add(prodLink);
+					} else {
+						prodLinks.addAll(getProdsFromSubcate(prodLink));
+					}
+					prodLinks.add(el.absUrl("href"));
 				}
-				prodLinks.add(el.absUrl("href"));
 			}
+		} else {
+			int indexPage = 2;
+			do {
+				String url = cateLink + "?page=" + indexPage;
+				doc = JsoupUtils.getDoc(url);
+				els = doc.select(".produktkachel");
+				for (Element el : els) {
+					String prodLink = el.absUrl("data-href");
+					String text = el.select(".zu_den_varianten").text();
+					if (text == null || text.isEmpty()) {
+						prodLinks.add(prodLink);
+					} else {
+						prodLinks.addAll(getProdsFromSubcate(prodLink));
+					}
+					prodLinks.add(el.absUrl("href"));
+				}
 
-			if (els.size() % bufSize != 0) {
-				break;
-			}
+				if (els.size() % bufSize != 0) {
+					break;
+				}
 
-			indexPage++;
-		} while (true);
+				indexPage++;
+			} while (true);
+		}
 		logger.info(String.format("CateLink: %s , NumProd: %d", cateLink, prodLinks.size()));
 		return prodLinks;
 	}
@@ -280,7 +309,17 @@ public class LudwigmeisterCrawler {
 		Set<String> prodLinks = new HashSet<>();
 		Document doc = JsoupUtils.getDoc(subCateLink);
 		String label = doc.select("#results-label").text();
+		String sProd = label.substring(label.indexOf("von"), label.length() - 1);
+		sProd = sProd.replace("von", "").trim();
+		int nProd = 0;
+		try {
+			nProd = Integer.parseInt(sProd);
+		} catch (Exception e) {
+			logger.error("Parse Label False. Label: " + label + ", Link: " + subCateLink, e);
+		}
+
 		logger.info(String.format("SubCateLink: %s , Label: %s", subCateLink, label));
+
 		Elements els = doc.select(".produktdetailzeile");
 		for (Element el : els) {
 			String prodLink = el.select("column-title a").attr("href");
@@ -293,24 +332,42 @@ public class LudwigmeisterCrawler {
 		if (els.size() % bufSize != 0) {
 			return prodLinks;
 		}
-		int indexPage = 2;
-		do {
-			String url = subCateLink + "?page=" + indexPage;
-			doc = JsoupUtils.getDoc(url);
-			els = doc.select(".produktdetailzeile");
-			for (Element el : els) {
-				String prodLink = el.select("column-title a").attr("href");
-				if (!prodLink.isEmpty())
-					prodLinks.add(prodLink);
-			}
 
-			if (els.isEmpty() || els.size() % bufSize != 0) {
-				break;
-			}
+		if (nProd > 0) {
+			for (int indexPage = 2; indexPage <= Math.abs(nProd / bufSize) + 1; indexPage++) {
+				String url = subCateLink + "?page=" + indexPage;
+				doc = JsoupUtils.getDoc(url);
+				els = doc.select(".produktdetailzeile");
+				for (Element el : els) {
+					String prodLink = el.select("column-title a").attr("href");
+					if (!prodLink.isEmpty())
+						prodLinks.add(prodLink);
+				}
 
-			indexPage++;
-		} while (true);
-		logger.info(String.format("SubCateLink: %s , NumProd: %d", subCateLink, prodLinks.size()));
+				// if (els.isEmpty() || els.size() % bufSize != 0) {
+				// break;
+				// }
+			}
+		} else {
+			int indexPage = 2;
+			do {
+				String url = subCateLink + "?page=" + indexPage;
+				doc = JsoupUtils.getDoc(url);
+				els = doc.select(".produktdetailzeile");
+				for (Element el : els) {
+					String prodLink = el.select("column-title a").attr("href");
+					if (!prodLink.isEmpty())
+						prodLinks.add(prodLink);
+				}
+
+				if (els.isEmpty() || els.size() % bufSize != 0) {
+					break;
+				}
+
+				indexPage++;
+			} while (true);
+		}
+		logger.info(String.format("SubCateLink: %s , NumSubProd: %d", subCateLink, prodLinks.size()));
 
 		return prodLinks;
 	}
@@ -358,16 +415,17 @@ public class LudwigmeisterCrawler {
 		}
 	}
 
-//	@Test
-//	public void test() {
-//		String url = "https://www.ludwigmeister.de/produkt/flanschlagergehaeuse/52173/fag-dreiloch-flanschlager-gehaeuse-grauguss-dreieckig-fuer-zylindrische-lager-52172";
-//		getProdsFromSubcate(url);
-//	}
+	@Test
+	public void test() {
+		String url = "https://www.ludwigmeister.de/produkt/gehaeusezubehoer/52162/skf-vierlippendichtung-fuer-stehlagergehaeuse-46737";
+		getProdsFromSubcate(url);
+	}
 
 	public static void main(String[] args) {
 		// args = new String[]{"-t","cate"};
-//		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
+		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
+
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
 
@@ -409,12 +467,8 @@ public class LudwigmeisterCrawler {
 				return;
 			}
 			ludwig.getProductLinks(fIn);
-		} /*
-			 * else if (type.equals("cate-err")) { zitec.getProdFromCateErr(); }
-			 * else if (type.equals("prod-err")) { zitec.getProdErr(); } else if
-			 * (type.equals("convert")) { zitec.convertOutputToTsv(); } else {
-			 * formatter.printHelp("Ludwig", options); return; }
-			 */
+		}
+
 		System.out.println("FINISH");
 	}
 }
