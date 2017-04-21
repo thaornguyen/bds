@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,7 +169,7 @@ public class LudwigmeisterCrawler {
 				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
 			});
 			logger.info("Category: " + count++ + "/" + cateLinks.size());
-			 break;
+			break;
 		}
 		long start2 = System.currentTimeMillis();
 		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " ms");
@@ -201,7 +202,7 @@ public class LudwigmeisterCrawler {
 		String title = doc.select(".beschreibung h2").text();
 		String desc = doc.select(".artikelbezeichnung,.artikelnummer,.dddwrapper").text();
 		Elements elCates = doc.select(".breadcrumb li");
-		List<String>nameCates = new ArrayList<>();
+		List<String> nameCates = new ArrayList<>();
 		for (Element el : elCates) {
 			nameCates.add(el.text());
 		}
@@ -235,7 +236,7 @@ public class LudwigmeisterCrawler {
 		Elements els = doc.select(".produktkachel");
 		for (Element el : els) {
 			String prodLink = el.absUrl("data-href");
-			if(prodLink.isEmpty()){
+			if (prodLink.isEmpty()) {
 				continue;
 			}
 			String text = el.select(".zu_den_varianten").text();
@@ -295,12 +296,14 @@ public class LudwigmeisterCrawler {
 		do {
 			String url = subCateLink + "?page=" + indexPage;
 			doc = JsoupUtils.getDoc(url);
-			els = doc.select(".produktdetailzeile a");
+			els = doc.select(".produktdetailzeile");
 			for (Element el : els) {
-				prodLinks.add(el.absUrl("href"));
+				String prodLink = el.select("column-title a").attr("href");
+				if (!prodLink.isEmpty())
+					prodLinks.add(prodLink);
 			}
 
-			if (els.size() % bufSize != 0) {
+			if (els.isEmpty() || els.size() % bufSize != 0) {
 				break;
 			}
 
@@ -310,6 +313,7 @@ public class LudwigmeisterCrawler {
 
 		return prodLinks;
 	}
+
 	public void convertOutputToTsv() {
 		String fProd = fOut + "zitec.prod.tsv";
 		String fProdOk = fOut + "zitec.prod.ok.tsv";
@@ -352,9 +356,16 @@ public class LudwigmeisterCrawler {
 			logger.error("File Not Found. " + fProd, e);
 		}
 	}
+
+	@Test
+	public void test() {
+		String url = "https://www.ludwigmeister.de/produkt/flanschlagergehaeuse/52173/fag-dreiloch-flanschlager-gehaeuse-grauguss-dreieckig-fuer-zylindrische-lager-52172";
+		getProdsFromSubcate(url);
+	}
+
 	public static void main(String[] args) {
-//		 args = new String[]{"-t","cate"};
-//		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.1.txt" };
+		// args = new String[]{"-t","cate"};
+		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
