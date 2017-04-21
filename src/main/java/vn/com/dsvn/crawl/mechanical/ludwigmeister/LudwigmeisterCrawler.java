@@ -168,7 +168,7 @@ public class LudwigmeisterCrawler {
 				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
 			});
 			logger.info("Category: " + count++ + "/" + cateLinks.size());
-			break;
+//			break;
 		}
 		long start2 = System.currentTimeMillis();
 		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " ms");
