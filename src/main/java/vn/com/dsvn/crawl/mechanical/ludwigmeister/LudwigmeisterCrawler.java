@@ -22,7 +22,6 @@ import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -357,11 +356,11 @@ public class LudwigmeisterCrawler {
 		}
 	}
 
-	@Test
-	public void test() {
-		String url = "https://www.ludwigmeister.de/produkt/flanschlagergehaeuse/52173/fag-dreiloch-flanschlager-gehaeuse-grauguss-dreieckig-fuer-zylindrische-lager-52172";
-		getProdsFromSubcate(url);
-	}
+//	@Test
+//	public void test() {
+//		String url = "https://www.ludwigmeister.de/produkt/flanschlagergehaeuse/52173/fag-dreiloch-flanschlager-gehaeuse-grauguss-dreieckig-fuer-zylindrische-lager-52172";
+//		getProdsFromSubcate(url);
+//	}
 
 	public static void main(String[] args) {
 		// args = new String[]{"-t","cate"};
