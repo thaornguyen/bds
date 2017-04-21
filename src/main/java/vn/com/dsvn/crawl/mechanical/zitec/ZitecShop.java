@@ -59,11 +59,12 @@ public class ZitecShop {
 			logger.error("File conf/zitec.properties Not Found", e);
 			return;
 		}
-//		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "20");
+		// System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
+		// "20");
 	}
 
 	private void getProductLinks(File fIn) {
-		logger.info("START APP: "+fIn);
+		logger.info("START APP: " + fIn);
 		long start = System.currentTimeMillis();
 		File fProd = new File(fOut + "zitec.prod.link.tsv");
 		List<String> cateLinks = new ArrayList<>();
@@ -83,7 +84,7 @@ public class ZitecShop {
 			// break;
 		}
 		long start2 = System.currentTimeMillis();
-		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " ms");
+		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " s");
 		try {
 			List<String> lines = FileUtils.readLines(fProd);
 			int countProd = 0;
@@ -275,6 +276,8 @@ public class ZitecShop {
 
 	public void getProdFromCateErr() {
 		Set<String> setProds = getProdLinkExists();
+		Set<String> setProdCrawleds = getProdLinkCrawled();
+		File fProd = new File(fOut + "zitec.prod.link.tsv");
 		File fCateErr = new File(fOut + "zitec.cate.error.txt");
 		try {
 			List<String> cateLinkErrs = FileUtils.readLines(fCateErr);
@@ -282,8 +285,14 @@ public class ZitecShop {
 			for (String cateLink : cateLinkErrs) {
 				List<String> productLinks = parseProductLinks(cateLink);
 				for (String prodLink : productLinks) {
-					if (!setProds.contains(prodLink))
-						parseProd(prodLink);
+					if (!setProds.contains(prodLink)) {
+						setProds.add(prodLink);
+						DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
+						if (!setProdCrawleds.contains(prodLink)) {
+							parseProd(prodLink);
+							setProdCrawleds.add(prodLink);
+						}
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -292,16 +301,8 @@ public class ZitecShop {
 	}
 
 	public void getProdErr() {
-		Set<String> setProds = new HashSet<>();
-		try {
-			List<String> lines = FileUtils.readLines(new File(fOut + "zitec.prod.tsv"));
-			for (String line : lines) {
-				String toks[] = line.split("\t");
-				setProds.add(toks[0]);
-			}
-		} catch (IOException e) {
-			logger.error("File not Found! File: " + fOut + "zitec.prod.tsv", e);
-		}
+		Set<String> setProds = getProdLinkCrawled();
+
 		Set<String> setProdLinks = getProdLinkExists();
 		for (String prodLink : setProdLinks) {
 			if (!setProds.contains(prodLink)) {
@@ -322,8 +323,24 @@ public class ZitecShop {
 			}
 
 		} catch (IOException e) {
-			logger.error("File not Found! File: " + fOut + "zitec.prod.tsv", e);
+			logger.error("File not Found! File: " + fOut + "zitec.prod.link.tsv", e);
 		}
+		return setProds;
+	}
+
+	private Set<String> getProdLinkCrawled() {
+		Set<String> setProds = new HashSet<>();
+		try (Stream<String> stream = Files.lines(Paths.get(fOut + "zitec.prod.tsv"))) {
+			stream.forEach(line -> {
+				String toks[] = line.split("\t");
+				if (toks.length > 0) {
+					setProds.add(toks[0]);
+				}
+			});
+		} catch (IOException e) {
+			logger.error("File Not Found. " + fOut + "zitec.prod.tsv", e);
+		}
+
 		return setProds;
 	}
 
@@ -380,7 +397,7 @@ public class ZitecShop {
 	// }
 
 	public static void main(String[] args) {
-//		 args = new String[] { "-t", "cate" ,"-c","zitec01.properties" };
+		// args = new String[] { "-t", "cate" ,"-c","zitec01.properties" };
 		// args = new String[] { "-t", "prod", "-i",
 		// "/data/workspace/BDSCrawler/data/zitec/zitec.cate.1.txt" };
 

@@ -1,12 +1,24 @@
 package vn.com.dsvn.crawl.mechanical.ludwigmeister;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FileUtils;
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -56,7 +68,7 @@ public class LudwigmeisterCrawler {
 		DSFileUtils.writeLine(urlSubCates, fOut + "ludw.cate.txt", true);
 		List<List<String>> smallerLists = Lists.partition(urlSubCates, Math.abs(urlSubCates.size() / 2) + 1);
 		for (int i = 0; i < smallerLists.size(); i++) {
-			DSFileUtils.writeLine(smallerLists.get(i), fOut + "zitec.cate." + (i + 1) + ".txt", false);
+			DSFileUtils.writeLine(smallerLists.get(i), fOut + "ludw.cate." + (i + 1) + ".txt", false);
 		}
 	}
 
@@ -104,7 +116,8 @@ public class LudwigmeisterCrawler {
 		Elements els = doc.select(".subkategorien .lowprofile");
 		els.forEach(el -> {
 			String subCateUrl = el.absUrl("href");
-			subCateUrls.add(subCateUrl);
+			if (!subCateUrl.isEmpty())
+				subCateUrls.add(subCateUrl);
 		});
 		return subCateUrls;
 	}
@@ -138,6 +151,81 @@ public class LudwigmeisterCrawler {
 		return true;
 	}
 
+	public void getProductLinks(File fIn) {
+		logger.info("START APP: " + fIn);
+		long start = System.currentTimeMillis();
+		File fProd = new File(fOut + "ludw.prod.link.tsv");
+		List<String> cateLinks = new ArrayList<>();
+		try {
+			cateLinks = FileUtils.readLines(fIn);
+		} catch (IOException e1) {
+			logger.error(String.format("File %s NOT FOUND", fIn), e1);
+			return;
+		}
+		int count = 0;
+		for (String cateLink : cateLinks) {
+			Set<String> productLinks = getProdsFromCate(cateLink);
+			productLinks.forEach(prodLink -> {
+				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
+			});
+			logger.info("Category: " + count++ + "/" + cateLinks.size());
+			 break;
+		}
+		long start2 = System.currentTimeMillis();
+		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " ms");
+		try {
+			List<String> lines = FileUtils.readLines(fProd);
+			int countProd = 0;
+			for (String line : lines) {
+				String toks[] = line.split("\t");
+				if (toks.length == 2) {
+					parseProd(toks[1]);
+				}
+				if (countProd++ % 1000 == 0) {
+					logger.info("Product: " + countProd + "/" + lines.size());
+				}
+			}
+		} catch (IOException e) {
+			logger.error("Read File FAIL. File: " + fOut + fProd, e);
+		}
+		long start3 = System.currentTimeMillis();
+		logger.info("Total Time Get Product: " + (start3 - start2) / 1000 + " ms");
+		logger.info("FINISH APP");
+	}
+
+	private void parseProd(String prodLink) {
+		Document doc = JsoupUtils.getDoc(prodLink, null);
+		if (doc == null) {
+			logger.error(String.format("Parse Document FAIL. Link: %s", prodLink));
+			return;
+		}
+		String title = doc.select(".beschreibung h2").text();
+		String desc = doc.select(".artikelbezeichnung,.artikelnummer,.dddwrapper").text();
+		Elements elCates = doc.select(".breadcrumb li");
+		List<String>nameCates = new ArrayList<>();
+		for (Element el : elCates) {
+			nameCates.add(el.text());
+		}
+		String category = String.join(">", nameCates);
+		Elements els = doc.select(".artikeldetailinfo ul");
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("Preis inkl. MwSt.", els.select("li:first-child.preis .right").text());
+		jsonObj.put("Standardpreis inkl. MwSt.", els.select(".listpricegross .preis").text());
+		jsonObj.put("Preis exkl. MwSt.", els.select(".preis.alternative .right").text());
+		jsonObj.put("Product Variable", els.select(".verfuegbar").text());
+
+		JSONObject jsonDetailObj = new JSONObject();
+		Elements detailEls = doc.select(".technischedaten .list ul li");
+		for (Element el : detailEls) {
+			String key = el.select("b").text();
+			String value = el.select("span").text();
+			jsonDetailObj.put(key, value);
+		}
+		DSFileUtils.write(
+				String.join("\t", prodLink, title, desc, category, jsonObj.toString(), jsonDetailObj.toString()),
+				fOut + "ludw.prod.tsv", true);
+	}
+
 	public Set<String> getProdsFromCate(String cateLink) {
 		// cateLink =
 		// "https://www.ludwigmeister.de/produkte/gehaeusezubehoer/52162";
@@ -148,13 +236,15 @@ public class LudwigmeisterCrawler {
 		Elements els = doc.select(".produktkachel");
 		for (Element el : els) {
 			String prodLink = el.absUrl("data-href");
+			if(prodLink.isEmpty()){
+				continue;
+			}
 			String text = el.select(".zu_den_varianten").text();
 			if (text == null || text.isEmpty()) {
 				prodLinks.add(prodLink);
 			} else {
 				prodLinks.addAll(getProdsFromSubcate(prodLink));
 			}
-			prodLinks.add(el.absUrl("href"));
 		}
 		int bufSize = 25;
 		if (els.size() % bufSize != 0) {
@@ -221,11 +311,99 @@ public class LudwigmeisterCrawler {
 
 		return prodLinks;
 	}
-
+	public void convertOutputToTsv() {
+		String fProd = fOut + "zitec.prod.tsv";
+		String fProdOk = fOut + "zitec.prod.ok.tsv";
+		Set<String> setKeys = new HashSet<>();
+		try (Stream<String> stream = Files.lines(Paths.get(fProd))) {
+			stream.forEach(line -> {
+				String toks[] = line.split("\t");
+				if (toks.length == 4) {
+					JSONObject jsonObj = new JSONObject(toks[3]);
+					setKeys.addAll(jsonObj.keySet());
+				}
+			});
+		} catch (IOException e) {
+			logger.error("File Not Found. " + fProd, e);
+		}
+		List<String> listKeys = new ArrayList<>();
+		listKeys.addAll(setKeys);
+		Collections.sort(listKeys);
+		StringBuilder header = new StringBuilder();
+		header.append(String.join("\t", "URL", "Name", "Outline"));
+		header.append("\t" + String.join("\t", listKeys));
+		DSFileUtils.write(header.toString(), fProdOk, false);
+		try (Stream<String> stream = Files.lines(Paths.get(fProd))) {
+			stream.forEach(line -> {
+				String toks[] = line.split("\t");
+				if (toks.length == 4) {
+					StringBuilder builder = new StringBuilder();
+					builder.append(String.join("\t", toks[0], toks[1], toks[2]));
+					JSONObject jsonObj = new JSONObject(toks[3]);
+					for (String key : listKeys) {
+						builder.append("\t");
+						if (jsonObj.has(key)) {
+							builder.append(jsonObj.get(key));
+						}
+					}
+					DSFileUtils.write(builder.toString(), fProdOk, true);
+				}
+			});
+		} catch (IOException e) {
+			logger.error("File Not Found. " + fProd, e);
+		}
+	}
 	public static void main(String[] args) {
+		// args = new String[]{"-t","cate"};
+		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.1.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
-		ludwig.getCates();
-		// ludwig.getProdsFromCate("");
+		CommandLineParser parser = new DefaultParser();
+		HelpFormatter formatter = new HelpFormatter();
+
+		Options options = new Options();
+		options.addOption("t", "type", true, "{cate: get category, prod: get product}");
+		options.addOption("i", "input", true, "file category links");
+		CommandLine cmd = null;
+		try {
+			cmd = parser.parse(options, args);
+		} catch (ParseException e) {
+			logger.error("Parse args false", e);
+			formatter.printHelp("Ludwig", options);
+		}
+
+		if (!cmd.hasOption("t")) {
+			logger.error("Don't have option type");
+			formatter.printHelp("Ludwig", options);
+			return;
+		}
+		String type = cmd.getOptionValue("t");
+		if (type.equals("cate")) {
+			ludwig.getCates();
+		} else if (type.equals("prod")) {
+			if (!cmd.hasOption("i")) {
+				logger.error("Don't have option input");
+				formatter.printHelp("Ludwig", options);
+				return;
+			}
+			String sIn = cmd.getOptionValue("i");
+			if (sIn == null) {
+				logger.error("File input not null: " + sIn);
+				formatter.printHelp("Ludwig", options);
+				return;
+			}
+			File fIn = new File(sIn);
+			if (!fIn.exists()) {
+				logger.error("File not FOUND: " + sIn);
+				formatter.printHelp("Ludwig", options);
+				return;
+			}
+			ludwig.getProductLinks(fIn);
+		} /*
+			 * else if (type.equals("cate-err")) { zitec.getProdFromCateErr(); }
+			 * else if (type.equals("prod-err")) { zitec.getProdErr(); } else if
+			 * (type.equals("convert")) { zitec.convertOutputToTsv(); } else {
+			 * formatter.printHelp("Ludwig", options); return; }
+			 */
 		System.out.println("FINISH");
 	}
 }
