@@ -364,7 +364,7 @@ public class LudwigmeisterCrawler {
 
 	public static void main(String[] args) {
 		// args = new String[]{"-t","cate"};
-		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
+//		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
