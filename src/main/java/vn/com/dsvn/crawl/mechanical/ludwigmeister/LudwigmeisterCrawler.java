@@ -281,9 +281,11 @@ public class LudwigmeisterCrawler {
 		Document doc = JsoupUtils.getDoc(subCateLink);
 		String label = doc.select("#results-label").text();
 		logger.info(String.format("SubCateLink: %s , Label: %s", subCateLink, label));
-		Elements els = doc.select(".produktdetailzeile a");
+		Elements els = doc.select(".produktdetailzeile");
 		for (Element el : els) {
-			prodLinks.add(el.absUrl("href"));
+			String prodLink = el.select("column-title a").attr("href");
+			if (!prodLink.isEmpty())
+				prodLinks.add(prodLink);
 		}
 
 		int bufSize = 25;
