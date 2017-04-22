@@ -22,12 +22,10 @@ import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
-import com.sun.xml.internal.bind.v2.TODO;
 
 import vn.com.dsvn.utils.DSFileUtils;
 import vn.com.dsvn.utils.JsoupUtils;
@@ -257,12 +255,13 @@ public class LudwigmeisterCrawler {
 		}
 		int bufSize = 25;
 		if (els.size() % bufSize != 0) {
-			logger.info(String.format("CateLink: %s , NumCateProd: %d", cateLink, prodLinks.size()));
+			logger.info(String.format("CateLink: %s , NumCateProdCrawled: %d", cateLink, prodLinks.size()));
 			return prodLinks;
 		}
 
 		if (nProd > 0) {
-			for (int indexPage = 2; indexPage <= Math.abs(nProd / bufSize) + 1; indexPage++) {
+			int maxPage = Math.abs(nProd / bufSize) + 1;
+			for (int indexPage = 2; indexPage <= maxPage; indexPage++) {
 				String url = cateLink + "?page=" + indexPage;
 				doc = JsoupUtils.getDoc(url);
 				els = doc.select(".produktkachel");
@@ -301,7 +300,7 @@ public class LudwigmeisterCrawler {
 				indexPage++;
 			} while (true);
 		}
-		logger.info(String.format("CateLink: %s , NumProd: %d", cateLink, prodLinks.size()));
+		logger.info(String.format("CateLink: %s , NumCateProdCrawled: %d", cateLink, prodLinks.size()));
 		return prodLinks;
 	}
 
@@ -320,9 +319,9 @@ public class LudwigmeisterCrawler {
 
 		logger.info(String.format("SubCateLink: %s , Label: %s", subCateLink, label));
 
-		Elements els = doc.select(".produktdetailzeile");
+		Elements els = doc.select(".produktdetailzeile .column-title a");
 		for (Element el : els) {
-			String prodLink = el.select("column-title a").attr("href");
+			String prodLink = el.absUrl("href");
 			if (!prodLink.isEmpty())
 				prodLinks.add(prodLink);
 		}
@@ -334,12 +333,13 @@ public class LudwigmeisterCrawler {
 		}
 
 		if (nProd > 0) {
-			for (int indexPage = 2; indexPage <= Math.abs(nProd / bufSize) + 1; indexPage++) {
+			int maxPage = Math.abs(nProd / bufSize) + 1;
+			for (int indexPage = 2; indexPage <= maxPage; indexPage++) {
 				String url = subCateLink + "?page=" + indexPage;
 				doc = JsoupUtils.getDoc(url);
-				els = doc.select(".produktdetailzeile");
+				els = doc.select(".produktdetailzeile .column-title a");
 				for (Element el : els) {
-					String prodLink = el.select("column-title a").attr("href");
+					String prodLink = el.absUrl("href");
 					if (!prodLink.isEmpty())
 						prodLinks.add(prodLink);
 				}
@@ -353,9 +353,9 @@ public class LudwigmeisterCrawler {
 			do {
 				String url = subCateLink + "?page=" + indexPage;
 				doc = JsoupUtils.getDoc(url);
-				els = doc.select(".produktdetailzeile");
+				els = doc.select(".produktdetailzeile .column-title a");
 				for (Element el : els) {
-					String prodLink = el.select("column-title a").attr("href");
+					String prodLink = el.attr("href");
 					if (!prodLink.isEmpty())
 						prodLinks.add(prodLink);
 				}
@@ -415,15 +415,16 @@ public class LudwigmeisterCrawler {
 		}
 	}
 
-	@Test
-	public void test() {
-		String url = "https://www.ludwigmeister.de/produkt/gehaeusezubehoer/52162/skf-vierlippendichtung-fuer-stehlagergehaeuse-46737";
-		getProdsFromSubcate(url);
-	}
+	// @Test
+	// public void test() {
+	// String url =
+	// "https://www.ludwigmeister.de/produkt/gehaeusezubehoer/52162/skf-vierlippendichtung-fuer-stehlagergehaeuse-46737";
+	// getProdsFromSubcate(url);
+	// }
 
 	public static void main(String[] args) {
 		// args = new String[]{"-t","cate"};
-		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
+//		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 
 		CommandLineParser parser = new DefaultParser();
