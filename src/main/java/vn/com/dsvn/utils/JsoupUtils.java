@@ -16,7 +16,7 @@ public class JsoupUtils {
 	public static final String USER_AGENT = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 "
 			+ "(KHTML, like Gecko) Chrome/30.0.1599.114 Safari/537.36";
 	public static final int TIMEOUT = 30000;
-	private static final int numMiniSecond = 2000;
+	// private static final int numMiniSecond = 2000;
 	static Logger logger = LoggerFactory.getLogger(JsoupUtils.class);
 
 	/**
@@ -25,25 +25,25 @@ public class JsoupUtils {
 	 * @param url
 	 * @return html text with marker
 	 */
-	public static String getHtml(String url) {
+	public static String getHtml(String url, int sleepTime) {
 		try {
-			return getDoc(url, null).html();
+			return getDoc(url, null, sleepTime).html();
 		} catch (Exception e) {
 			return "";
 		}
 	} // end method
 
-	public static Document getDoc(String url) {
-		return getDoc(url, null);
+	public static Document getDoc(String url, int sleepTime) {
+		return getDoc(url, null, sleepTime);
 	}
 
-	public static Document getDoc(String url, Map<String, String> headers) {
+	public static Document getDoc(String url, Map<String, String> headers, int sleepTime) {
 		URI uri = null;
 		try {
 			uri = new URI(url);
 		} catch (URISyntaxException e) {
 			logger.error("ERROR_URL :" + url, e);
-			sleep(numMiniSecond);
+			sleep(sleepTime);
 			return null;
 		}
 		Document doc = null;
@@ -75,7 +75,7 @@ public class JsoupUtils {
 					finish = System.currentTimeMillis();
 					logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
 					logger.error(String.format("REQUEST_TIMEOUT (%d ms): %s", (finish - start), url), e1);
-					sleep(numMiniSecond);
+					sleep(sleepTime);
 					return null;
 				}
 			} else {
@@ -85,17 +85,18 @@ public class JsoupUtils {
 				logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url));
 			}
 		}
-		sleep(numMiniSecond);
+		sleep(sleepTime);
 		return doc;
 	}
 
-	public static Document getPostDoc(String url, Map<String, String> headers, Map<String, String> datas) {
+	public static Document getPostDoc(String url, Map<String, String> headers, Map<String, String> datas,
+			int sleepTime) {
 		URI uri = null;
 		try {
 			uri = new URI(url);
 		} catch (URISyntaxException e) {
 			logger.error(String.format("ERROR_URL :%s, Data: %s", url, datas), e);
-			sleep(numMiniSecond);
+			sleep(sleepTime);
 			return null;
 		}
 		Document doc = null;
@@ -139,7 +140,7 @@ public class JsoupUtils {
 					logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
 					logger.error(String.format("REQUEST_TIMEOUT (%d ms): %s. Data: %s", (finish - start), url, datas),
 							e1);
-					sleep(numMiniSecond);
+					sleep(sleepTime);
 					return null;
 				}
 			} else {
@@ -149,7 +150,7 @@ public class JsoupUtils {
 				logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url));
 			}
 		}
-		sleep(numMiniSecond);
+		sleep(sleepTime);
 		return doc;
 	}
 
