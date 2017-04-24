@@ -36,7 +36,9 @@ public class JsoupUtils {
 	public static Document getDoc(String url, int sleepTime) {
 		return getDoc(url, null, sleepTime);
 	}
-
+	public static Document getDoc(String url) {
+		return getDoc(url, null, 2000);
+	}
 	public static Document getDoc(String url, Map<String, String> headers, int sleepTime) {
 		URI uri = null;
 		try {

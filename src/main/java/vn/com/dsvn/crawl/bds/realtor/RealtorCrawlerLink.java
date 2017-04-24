@@ -42,7 +42,7 @@ public class RealtorCrawlerLink {
 			String link = l.getLink();
 			Document doc = null;
 			int index = 1;
-			while ((doc = JsoupUtils.getDoc(link+"/pg-"+index)).hasClass(".page")) {
+			while ((doc = JsoupUtils.getDoc(link+"/pg-"+index,0)).hasClass(".page")) {
 				System.out.println(index);
 				index++;
 			}
@@ -82,7 +82,7 @@ public class RealtorCrawlerLink {
 	private Set<ZillowLink> getLinks(String url, String tag) {
 		Set<ZillowLink> links = new HashSet<ZillowLink>();
 		try {
-			Document doc = JsoupUtils.getDoc(url);
+			Document doc = JsoupUtils.getDoc(url,0);
 			Elements els = doc.select(tag);
 			for (Element el : els) {
 				String name = el.text();

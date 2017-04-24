@@ -98,7 +98,7 @@ public class ZillowRequestStatistic {
 	private Set<ZillowLink> getLinks(String url, String tag) {
 		Set<ZillowLink> links = new HashSet<ZillowLink>();
 		try {
-			Document doc = JsoupUtils.getDoc(url);
+			Document doc = JsoupUtils.getDoc(url,0);
 			Elements els = doc.select(tag);
 			for (Element el : els) {
 				String name = el.text();

@@ -53,7 +53,7 @@ public class TruliaCrawlerLink {
 			String link = l.getLink();
 			for (int i = 1; i < 10000; i++) {
 				String link2 = link + i + "_p";
-				Document doc = JsoupUtils.getDoc(link2);
+				Document doc = JsoupUtils.getDoc(link2,0);
 				if (doc == null) {
 					break;
 				}
@@ -78,7 +78,7 @@ public class TruliaCrawlerLink {
 	private Set<ZillowLink> getLinks(String url, String tag) {
 		Set<ZillowLink> links = new HashSet<ZillowLink>();
 		try {
-			Document doc = JsoupUtils.getDoc(url);
+			Document doc = JsoupUtils.getDoc(url,0);
 			Elements els = doc.select(tag);
 			for (Element el : els) {
 				String name = el.text();

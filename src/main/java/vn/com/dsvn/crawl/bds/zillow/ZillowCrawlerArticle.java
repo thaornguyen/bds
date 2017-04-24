@@ -109,7 +109,7 @@ public class ZillowCrawlerArticle {
 
 		public ZillowArticle getArticle(String link) {
 			ZillowArticle article = new ZillowArticle();
-			Document doc = JsoupUtils.getDoc(link);
+			Document doc = JsoupUtils.getDoc(link,0);
 
 			article.setLink(link);
 			// get Address

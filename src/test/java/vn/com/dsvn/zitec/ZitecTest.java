@@ -28,7 +28,7 @@ public class ZitecTest {
 	private void getCateLinks() {
 		List<String> cateLinks = new ArrayList<>();
 		try {
-			Document doc = JsoupUtils.getDoc(this.domain, null);
+			Document doc = JsoupUtils.getDoc(this.domain, null,0);
 			Elements els = doc.select(".leftmenuli3");
 			for (Element el : els) {
 				Elements subEls = el.select(".leftmenuli4");
