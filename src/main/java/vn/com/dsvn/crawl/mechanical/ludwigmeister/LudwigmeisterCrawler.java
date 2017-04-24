@@ -59,6 +59,8 @@ public class LudwigmeisterCrawler {
 						urlSubCate4s.parallelStream().forEach(urlSubCate4 -> {
 							urlSubCates.add(urlSubCate4);
 						});
+					} else {
+						urlSubCates.add(urlSubCate3);
 					}
 				});
 
@@ -165,7 +167,9 @@ public class LudwigmeisterCrawler {
 		for (String cateLink : cateLinks) {
 			Set<String> productLinks = getProdsFromCate(cateLink);
 			productLinks.forEach(prodLink -> {
-				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
+				if (!prodLink.isEmpty()) {
+					DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
+				}
 			});
 			logger.info("Category: " + count++ + "/" + cateLinks.size());
 			// break;
@@ -423,8 +427,9 @@ public class LudwigmeisterCrawler {
 	// }
 
 	public static void main(String[] args) {
-		// args = new String[]{"-t","cate"};
-//		args = new String[] { "-t", "prod", "-i", "data/ludw/ludw.cate.06.txt" };
+//		args = new String[] { "-t", "cate" };
+		// args = new String[] { "-t", "prod", "-i",
+		// "data/ludw/ludw.cate.06.txt" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 
 		CommandLineParser parser = new DefaultParser();
