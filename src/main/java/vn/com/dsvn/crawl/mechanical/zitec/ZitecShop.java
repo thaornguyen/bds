@@ -37,13 +37,13 @@ import vn.com.dsvn.utils.JsoupUtils;
 public class ZitecShop {
 	private static final Logger logger = LoggerFactory.getLogger(ZitecShop.class);
 	private String domain = "https://www.zitec-shop.de/";
-	private String fOut = "data/zitec/";
+	private String fOut = "data/zitec_2/";
 	private Properties prof;
 
 	public ZitecShop() {
 		prof = new Properties();
 		try {
-			prof.load(new FileInputStream(new File("conf/zitec.properties")));
+			prof.load(new FileInputStream(new File("conf/zitec02.properties")));
 		} catch (IOException e) {
 			logger.error("File conf/zitec.properties Not Found", e);
 			return;
@@ -63,7 +63,7 @@ public class ZitecShop {
 		// "20");
 	}
 
-	private void getProductLinks(File fIn) {
+	public void getProductLinks(File fIn) {
 		logger.info("START APP: " + fIn);
 		long start = System.currentTimeMillis();
 		File fProd = new File(fOut + "zitec.prod.link.tsv");
@@ -81,6 +81,7 @@ public class ZitecShop {
 				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
 			});
 			logger.info("Category: " + count++ + "/" + cateLinks.size());
+			logger.info("ProdLink: " + cateLink + " , NumProd: " + productLinks.size());
 			// break;
 		}
 		long start2 = System.currentTimeMillis();
@@ -134,7 +135,7 @@ public class ZitecShop {
 		}
 	}
 
-	private List<String> parseProductLinks(String cateLink) {
+	public List<String> parseProductLinks(String cateLink) {
 		List<String> prodLinks = new ArrayList<>();
 		Map<String, String> headers = new HashMap<>();
 		headers.put("Content-Type", "application/x-www-form-urlencoded");
@@ -397,9 +398,9 @@ public class ZitecShop {
 	// }
 
 	public static void main(String[] args) {
-		// args = new String[] { "-t", "cate" ,"-c","zitec01.properties" };
-		// args = new String[] { "-t", "prod", "-i",
-		// "/data/workspace/BDSCrawler/data/zitec/zitec.cate.1.txt" };
+//		args = new String[] { "-t", "convert", "-c", "zitec01.properties" };
+//		 args = new String[] { "-t", "prod", "-i",
+//		 "/data/workspace/BDSCrawler/data/zitec_2/zitec.cate.1.txt" };
 
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
