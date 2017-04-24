@@ -109,7 +109,7 @@ public class ZitecShop {
 	private void getCateLinks() {
 		List<String> cateLinks = new ArrayList<>();
 		try {
-			Document doc = JsoupUtils.getDoc(this.domain, null,5000);
+			Document doc = JsoupUtils.getDoc(this.domain, null,10000);
 			Elements els = doc.select(".leftmenuli3");
 			for (Element el : els) {
 				Elements subEls = el.select(".leftmenuli4");
@@ -157,7 +157,7 @@ public class ZitecShop {
 		// Random ran = new Random();
 		// int x = ran.nextInt(listCookie.size());
 		// headers.put("Cookie", listCookie.get(x));
-		Document doc = JsoupUtils.getDoc(cateLink, headers,5000);
+		Document doc = JsoupUtils.getDoc(cateLink, headers,10000);
 		if (doc == null) {
 			DSFileUtils.write(cateLink, fOut + "zitec.cate.error.txt", true);
 			return prodLinks;
@@ -226,7 +226,7 @@ public class ZitecShop {
 		datas.put("RestoreSearch", restoreSearch);
 		datas.put("blaetter", String.valueOf(indexPage));
 		datas.put("slct_cmspage", String.valueOf(indexPage));
-		Document prodDoc = JsoupUtils.getPostDoc("https://www.zitec-shop.de/index.php", headers, datas,5000);
+		Document prodDoc = JsoupUtils.getPostDoc("https://www.zitec-shop.de/index.php", headers, datas,10000);
 		if (prodDoc == null) {
 			DSFileUtils.write(cateLink, fOut + "zitec.cate.error.txt", true);
 			return prodLinks;
