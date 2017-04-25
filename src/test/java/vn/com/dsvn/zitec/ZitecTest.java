@@ -6,15 +6,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 import vn.com.dsvn.crawl.mechanical.zitec.ZitecShop;
 import vn.com.dsvn.utils.DSFileUtils;
@@ -28,7 +32,7 @@ public class ZitecTest {
 	private void getCateLinks() {
 		List<String> cateLinks = new ArrayList<>();
 		try {
-			Document doc = JsoupUtils.getDoc(this.domain, null,0);
+			Document doc = JsoupUtils.getDoc(this.domain, null, 0);
 			Elements els = doc.select(".leftmenuli3");
 			for (Element el : els) {
 				Elements subEls = el.select(".leftmenuli4");
@@ -61,7 +65,9 @@ public class ZitecTest {
 	}
 
 	public static void statisTest() throws IOException {
-		List<String> lines = FileUtils.readLines(new File("/home/thaonp/Desktop/zitec_data/zitec.prod.link.ok.tsv"));
+		// List<String> lines = FileUtils.readLines(new
+		// File("/home/thaonp/Desktop/zitec_data/zitec.prod.link.ok.tsv"));
+		List<String> lines = FileUtils.readLines(new File("/home/thaonp/Desktop/zitec.prod.link.ok.tsv"));
 		Map<String, Integer> maps = new HashMap<>();
 		for (String line : lines) {
 			String toks[] = line.split("\t");
@@ -73,7 +79,9 @@ public class ZitecTest {
 			maps.put(toks[0], count);
 		}
 
-		List<String> estimates = FileUtils.readLines(new File("/home/thaonp/Desktop/zitec.cate.estimate.tsv"));
+		// List<String> estimates = FileUtils.readLines(new
+		// File("/home/thaonp/Desktop/zitec.cate.estimate.tsv"));
+		List<String> estimates = FileUtils.readLines(new File("/home/thaonp/Desktop/zitec.cate.not.crawled.tsv"));
 		List<String> outs = new ArrayList<>();
 		List<String> errs = new ArrayList<>();
 		for (String line : estimates) {
@@ -81,15 +89,20 @@ public class ZitecTest {
 			if (maps.containsKey(toks[0])) {
 				// outs.add(toks[0] + "\t" + maps.get(toks[0]));
 				if (Integer.parseInt(toks[1]) != maps.get(toks[0])) {
-					errs.add(line);
+					errs.add(line + "\t" + maps.get(toks[0]));
 				}
 			} else {
 				// outs.add(toks[0] + "\t0");
-				errs.add(line);
+				errs.add(line + "\t0");
 			}
 		}
-		FileUtils.writeLines(new File("/home/thaonp/Desktop/zitec.cate.crawled.tsv"), outs);
-		FileUtils.writeLines(new File("/home/thaonp/Desktop/zitec.cate.not.crawled.tsv"), errs);
+		// FileUtils.writeLines(new
+		// File("/home/thaonp/Desktop/zitec.cate.crawled.tsv"), outs);
+		FileUtils.writeLines(new File("/home/thaonp/Desktop/zitec.cate.not.crawledxxxxx.tsv"), errs);
+		// FileUtils.writeLines(new
+		// File("/home/thaonp/Desktop/zitec.cate.crawled.tsv"), outs);
+		// FileUtils.writeLines(new
+		// File("/home/thaonp/Desktop/zitec.cate.not.crawled.tsv"), errs);
 	}
 
 	private int parseNumber(String str) {
@@ -115,14 +128,49 @@ public class ZitecTest {
 		zitec.parseProductLinks(cateLink);
 	}
 
-	public static void testGetCate() {
-		ZitecShop zitec = new ZitecShop("conf/zitec15.properties");
-		zitec.getProductLinks(new File("/data/workspace/BDSCrawler2/data/zitec_test/zitec.cate.test.txt"));
+	public static void testGetProdLink() throws IOException {
+		ZitecShop zitec = new ZitecShop("conf/zitec03.properties");
+		File fProd = new File("data/zitec_2/zitec.prod.link2.tsv");
+		List<String> lines = FileUtils.readLines(new File("data/zitec_2/zitec.cate.txt"));
+		lines.parallelStream().forEach(cateLink -> {
+			List<String> productLinks = zitec.parseProductLinks(cateLink);
+			for (String prodLink : productLinks) {
+				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
+			}
+			logger.info("ProdLink: " + cateLink + " , NumProd: " + productLinks.size());
+		});
 
 	}
 
+	public static void testGetProdLinkNotCrawled() throws IOException {
+		ZitecShop zitec = new ZitecShop();
+//		Set<String> prodLinkExists = zitec.getProdLinkExists();
+		List<String> lines = FileUtils.readLines(new File("data/zitec/zitec.prod.link.tsv"));
+		Set<String> prodLinkCrawleds = zitec.getProdLinkCrawled();
+		List<String> outs = new ArrayList<>();
+		for (String line : lines) {
+			String toks[] = line.split("\t");
+			if(toks.length==2){
+				String link = toks[1];
+				if (prodLinkCrawleds.add(link))
+					outs.add(line);	
+			}
+			
+		}
+		FileUtils.writeLines(new File("data/zitec/zitec.prod.not.crawled.tsv"), outs);
+		List<List<String>> lists = Lists.partition(outs, 9300);
+		int index = 2;
+		for (List<String> list : lists) {
+			if (index < 10)
+				FileUtils.writeLines(new File("data/zitec/zitec.prod.0" + index++ + ".txt"), list);
+			else
+				FileUtils.writeLines(new File("data/zitec/zitec.prod." + index++ + ".txt"), list);
+		}
+		
+	}
+
 	public static void splitCate() throws IOException {
-		List<String> lines = FileUtils.readLines(new File("/home/thaonp/Desktop/zitec.cate.not.crawled.tsv"));
+		List<String> lines = FileUtils.readLines(new File("data/zitec/zitec.prod.not.crawled.tsv"));
 		int count = 0;
 		int index = 2;
 		List<String> outs = new ArrayList<>();
@@ -133,9 +181,9 @@ public class ZitecTest {
 			outs.add(toks[0]);
 			if (count > 15000) {
 				if (index < 10)
-					FileUtils.writeLines(new File("data/zitec_2/zitec.cate.0" + index++ + ".txt"), outs);
+					FileUtils.writeLines(new File("data/zitec/zitec.prod.0" + index++ + ".txt"), outs);
 				else
-					FileUtils.writeLines(new File("data/zitec_2/zitec.cate." + index++ + ".txt"), outs);
+					FileUtils.writeLines(new File("data/zitec/zitec.prod." + index++ + ".txt"), outs);
 				count = 0;
 				outs = new ArrayList<>();
 			}
@@ -143,20 +191,30 @@ public class ZitecTest {
 		if (outs.size() > 0) {
 			FileUtils.writeLines(new File("data/zitec_2/zitec.cate." + index++ + ".txt"), outs);
 		}
+	
 
 	}
 
 	public static void main(String[] args) {
 		ZitecTest zitec = new ZitecTest();
 		// zitec.getCateLinks();
+//		try {
+//			statisTest();
+//			// splitCate();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+		// try {
+		// testGetProdLink();
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+		// testGetCate();
 		try {
-			// statisTest();
-			splitCate();
+			testGetProdLinkNotCrawled();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		// test1000product();
-		// testGetCate();
 	}
 
 }

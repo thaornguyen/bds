@@ -37,8 +37,9 @@ import vn.com.dsvn.utils.JsoupUtils;
 public class ZitecShop {
 	private static final Logger logger = LoggerFactory.getLogger(ZitecShop.class);
 	private String domain = "https://www.zitec-shop.de/";
-	private String fOut = "data/zitec_2/";
+	private String fOut = "data/zitec/";
 	private Properties prof;
+	private int sleepTime = 2000;
 
 	public ZitecShop() {
 		prof = new Properties();
@@ -77,15 +78,20 @@ public class ZitecShop {
 		int count = 0;
 		for (String cateLink : cateLinks) {
 			List<String> productLinks = parseProductLinks(cateLink);
-			productLinks.forEach(prodLink -> {
+			for (String prodLink : productLinks) {
 				DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
-			});
+			}
 			logger.info("Category: " + count++ + "/" + cateLinks.size());
 			logger.info("ProdLink: " + cateLink + " , NumProd: " + productLinks.size());
 			// break;
 		}
 		long start2 = System.currentTimeMillis();
 		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " s");
+		logger.info("FINISH APP PRODUCT LINK");
+	}
+
+	public void getProductInfos(File fProd) {
+		long start2 = System.currentTimeMillis();
 		try {
 			List<String> lines = FileUtils.readLines(fProd);
 			int countProd = 0;
@@ -98,18 +104,19 @@ public class ZitecShop {
 					logger.info("Product: " + countProd + "/" + lines.size());
 				}
 			}
+			
 		} catch (IOException e) {
 			logger.error("Read File FAIL. File: " + fOut + fProd, e);
 		}
 		long start3 = System.currentTimeMillis();
 		logger.info("Total Time Get Product: " + (start3 - start2) / 1000 + " ms");
-		logger.info("FINISH APP");
+		logger.info("FINISH APP PRODUCT INFO");
 	}
 
 	private void getCateLinks() {
 		List<String> cateLinks = new ArrayList<>();
 		try {
-			Document doc = JsoupUtils.getDoc(this.domain, null,10000);
+			Document doc = JsoupUtils.getDoc(this.domain, null,this.sleepTime);
 			Elements els = doc.select(".leftmenuli3");
 			for (Element el : els) {
 				Elements subEls = el.select(".leftmenuli4");
@@ -157,7 +164,7 @@ public class ZitecShop {
 		// Random ran = new Random();
 		// int x = ran.nextInt(listCookie.size());
 		// headers.put("Cookie", listCookie.get(x));
-		Document doc = JsoupUtils.getDoc(cateLink, headers,10000);
+		Document doc = JsoupUtils.getDoc(cateLink, headers,this.sleepTime);
 		if (doc == null) {
 			DSFileUtils.write(cateLink, fOut + "zitec.cate.error.txt", true);
 			return prodLinks;
@@ -188,6 +195,11 @@ public class ZitecShop {
 			Set<String> subProdLinks = parseProductLinks(cateLink, restoreSearch, indexPage);
 
 			if (subProdLinks.isEmpty()) {
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 				subProdLinks = parseProductLinks(cateLink, restoreSearch, indexPage);
 				if (subProdLinks.isEmpty()) {
 					logger.error(String.format("PARSE PRODUCT EMPTY. Link: %s, IndexPage: %d", cateLink, indexPage));
@@ -226,7 +238,7 @@ public class ZitecShop {
 		datas.put("RestoreSearch", restoreSearch);
 		datas.put("blaetter", String.valueOf(indexPage));
 		datas.put("slct_cmspage", String.valueOf(indexPage));
-		Document prodDoc = JsoupUtils.getPostDoc("https://www.zitec-shop.de/index.php", headers, datas,10000);
+		Document prodDoc = JsoupUtils.getPostDoc("https://www.zitec-shop.de/index.php", headers, datas,this.sleepTime);
 		if (prodDoc == null) {
 			DSFileUtils.write(cateLink, fOut + "zitec.cate.error.txt", true);
 			return prodLinks;
@@ -256,7 +268,7 @@ public class ZitecShop {
 	}
 
 	private void parseProd(String prodLink) {
-		Document doc = JsoupUtils.getDoc(prodLink, null,2000);
+		Document doc = JsoupUtils.getDoc(prodLink, null, this.sleepTime);
 		if (doc == null) {
 			logger.error(String.format("Parse Document FAIL. Link: %s", prodLink));
 			return;
@@ -273,11 +285,12 @@ public class ZitecShop {
 			}
 		}
 		DSFileUtils.write(String.join("\t", prodLink, title, desc, jsonObj.toString()), fOut + "zitec.prod.tsv", true);
+		logger.info("PROD-OK: "+prodLink);
 	}
 
 	public void getProdFromCateErr() {
 		Set<String> setProds = getProdLinkExists();
-		Set<String> setProdCrawleds = getProdLinkCrawled();
+		// Set<String> setProdCrawleds = getProdLinkCrawled();
 		File fProd = new File(fOut + "zitec.prod.link.tsv");
 		File fCateErr = new File(fOut + "zitec.cate.error.txt");
 		try {
@@ -289,10 +302,10 @@ public class ZitecShop {
 					if (!setProds.contains(prodLink)) {
 						setProds.add(prodLink);
 						DSFileUtils.write(cateLink + "\t" + prodLink, fProd.toString(), true);
-						if (!setProdCrawleds.contains(prodLink)) {
-							parseProd(prodLink);
-							setProdCrawleds.add(prodLink);
-						}
+						// if (!setProdCrawleds.contains(prodLink)) {
+						// parseProd(prodLink);
+						// setProdCrawleds.add(prodLink);
+						// }
 					}
 				}
 			}
@@ -312,7 +325,7 @@ public class ZitecShop {
 		}
 	}
 
-	private Set<String> getProdLinkExists() {
+	public Set<String> getProdLinkExists() {
 		Set<String> setProds = new HashSet<>();
 		try {
 			List<String> prodLinks = FileUtils.readLines(new File(fOut + "zitec.prod.link.tsv"));
@@ -329,7 +342,7 @@ public class ZitecShop {
 		return setProds;
 	}
 
-	private Set<String> getProdLinkCrawled() {
+	public Set<String> getProdLinkCrawled() {
 		Set<String> setProds = new HashSet<>();
 		try (Stream<String> stream = Files.lines(Paths.get(fOut + "zitec.prod.tsv"))) {
 			stream.forEach(line -> {
@@ -398,9 +411,9 @@ public class ZitecShop {
 	// }
 
 	public static void main(String[] args) {
-//		args = new String[] { "-t", "convert", "-c", "zitec01.properties" };
-//		 args = new String[] { "-t", "prod", "-i",
-//		 "/data/workspace/BDSCrawler/data/zitec_2/zitec.cate.1.txt" };
+		// args = new String[] { "-t", "convert", "-c", "zitec01.properties" };
+//		args = new String[] { "-t", "prod-info", "-i", "/data/workspace/BDSCrawler2/data/zitec/zitec.prod.02.txt", "-c",
+//				"conf/zitec02.properties" };
 
 		CommandLineParser parser = new DefaultParser();
 		HelpFormatter formatter = new HelpFormatter();
@@ -452,6 +465,25 @@ public class ZitecShop {
 				return;
 			}
 			zitec.getProductLinks(fIn);
+		} else if (type.equals("prod-info")) {
+			if (!cmd.hasOption("i")) {
+				logger.error("Don't have option input");
+				formatter.printHelp("ZitecCrawler", options);
+				return;
+			}
+			String sIn = cmd.getOptionValue("i");
+			if (sIn == null) {
+				logger.error("File input not null: " + sIn);
+				formatter.printHelp("ZitecCrawler", options);
+				return;
+			}
+			File fIn = new File(sIn);
+			if (!fIn.exists()) {
+				logger.error("File not FOUND: " + sIn);
+				formatter.printHelp("ZitecCrawler", options);
+				return;
+			}
+			zitec.getProductInfos(fIn);
 		} else if (type.equals("cate-err")) {
 			zitec.getProdFromCateErr();
 		} else if (type.equals("prod-err")) {
