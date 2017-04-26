@@ -29,39 +29,16 @@ public class ZitecTest {
 	private String domain = "https://www.zitec-shop.de/";
 	private String fOut = "data/zitec_test/";
 
-	private void getCateLinks() {
-		List<String> cateLinks = new ArrayList<>();
+	public  void getCateLinks() {
 		try {
-			Document doc = JsoupUtils.getDoc(this.domain, null, 0);
-			Elements els = doc.select(".leftmenuli3");
+			Document doc = JsoupUtils.getDoc(this.domain, null,0);
+			Elements els = doc.select(".leftmenuli3 .leftmenuli5 a");
 			for (Element el : els) {
-				Elements subEls = el.select(".leftmenuli4");
-				if (subEls.size() == 0) {
-					Elements elLinks = el.select("a");
-					for (Element elLink : elLinks) {
-						String prod = elLink.text();
-						int num = parseNumber(prod);
-						cateLinks.add(elLink.absUrl("href") + "\t" + num);
-					}
-				} else {
-					Elements elLinks = subEls.select("a");
-					for (Element elLink : elLinks) {
-						String prod = elLink.text();
-						int num = parseNumber(prod);
-						cateLinks.add(elLink.absUrl("href") + "\t" + num);
-					}
-				}
+				System.out.println(el.absUrl("href"));
 			}
 		} catch (Exception e) {
 			logger.error("PARSE DOMAIN FAIL.", e);
 		}
-		DSFileUtils.writeLine(cateLinks, fOut + "zitec.cate.txt", false);
-		// List<List<String>> smallerLists = Lists.partition(cateLinks,
-		// Math.abs(cateLinks.size() / 14) + 1);
-		// for (int i = 0; i < smallerLists.size(); i++) {
-		// DSFileUtils.writeLine(smallerLists.get(i), fOut + "zitec.cate." + (i
-		// + 1) + ".txt", false);
-		// }
 	}
 
 	public static void statisTest() throws IOException {
@@ -145,20 +122,21 @@ public class ZitecTest {
 	public static void testGetProdLinkNotCrawled() throws IOException {
 		ZitecShop zitec = new ZitecShop();
 //		Set<String> prodLinkExists = zitec.getProdLinkExists();
-		List<String> lines = FileUtils.readLines(new File("data/zitec/zitec.prod.link.tsv"));
-		Set<String> prodLinkCrawleds = zitec.getProdLinkCrawled();
-		List<String> outs = new ArrayList<>();
-		for (String line : lines) {
-			String toks[] = line.split("\t");
-			if(toks.length==2){
-				String link = toks[1];
-				if (prodLinkCrawleds.add(link))
-					outs.add(line);	
-			}
-			
-		}
-		FileUtils.writeLines(new File("data/zitec/zitec.prod.not.crawled.tsv"), outs);
-		List<List<String>> lists = Lists.partition(outs, 9300);
+//		List<String> lines = FileUtils.readLines(new File("data/zitec/zitec.prod.link.local.txt"));
+//		Set<String> prodLinkCrawleds = zitec.getProdLinkCrawled();
+//		List<String> outs = new ArrayList<>();
+//		for (String line : lines) {
+//			String toks[] = line.split("\t");
+//			if(toks.length==2){
+//				String link = toks[1];
+//				if (prodLinkCrawleds.add(link))
+//					outs.add(line);	
+//			}
+//			
+//		}
+//		FileUtils.writeLines(new File("data/zitec/zitec.prod.not.crawled.txt"), outs);
+		List<String> outs = FileUtils.readLines(new File("data/zitec/zitec.prod.not.crawled.tsv"));
+		List<List<String>> lists = Lists.partition(outs, 2100);
 		int index = 2;
 		for (List<String> list : lists) {
 			if (index < 10)
@@ -199,8 +177,8 @@ public class ZitecTest {
 		ZitecTest zitec = new ZitecTest();
 		// zitec.getCateLinks();
 //		try {
-//			statisTest();
-//			// splitCate();
+////			statisTest();
+//			 splitCate();
 //		} catch (IOException e) {
 //			e.printStackTrace();
 //		}
@@ -215,6 +193,7 @@ public class ZitecTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+//		zitec.getCateLinks();
 	}
 
 }

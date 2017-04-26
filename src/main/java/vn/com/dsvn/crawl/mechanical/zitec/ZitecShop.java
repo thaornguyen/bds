@@ -412,7 +412,7 @@ public class ZitecShop {
 
 	public static void main(String[] args) {
 		// args = new String[] { "-t", "convert", "-c", "zitec01.properties" };
-//		args = new String[] { "-t", "prod-info", "-i", "/data/workspace/BDSCrawler2/data/zitec/zitec.prod.02.txt", "-c",
+//		args = new String[] { "-t", "prod-info", "-i", "/data/workspace/BDSCrawler3/data/zitec/zitec.prod.link.local.txt", "-c",
 //				"conf/zitec02.properties" };
 
 		CommandLineParser parser = new DefaultParser();
