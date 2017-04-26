@@ -359,7 +359,7 @@ public class ZitecShop {
 	}
 
 	public void convertOutputToTsv() {
-		String fProd = fOut + "zitec.prod.tsv";
+		String fProd = fOut + "zitec.prod.json.tsv";
 		String fProdOk = fOut + "zitec.prod.ok.tsv";
 		Set<String> setKeys = new HashSet<>();
 		try (Stream<String> stream = Files.lines(Paths.get(fProd))) {
@@ -411,8 +411,8 @@ public class ZitecShop {
 	// }
 
 	public static void main(String[] args) {
-		// args = new String[] { "-t", "convert", "-c", "zitec01.properties" };
-//		args = new String[] { "-t", "prod-info", "-i", "/data/workspace/BDSCrawler3/data/zitec/zitec.prod.link.local.txt", "-c",
+		 args = new String[] { "-t", "convert", "-c", "zitec01.properties" };
+//		args = new String[] { "-t", "prod-info", "-i", "/data/workspace/BDSCrawler3/data/zitec/zitec.prod.local.txt", "-c",
 //				"conf/zitec02.properties" };
 
 		CommandLineParser parser = new DefaultParser();

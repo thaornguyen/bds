@@ -6,8 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -22,10 +24,13 @@ import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.sun.xml.internal.bind.v2.TODO;
 
 import vn.com.dsvn.utils.DSFileUtils;
 import vn.com.dsvn.utils.JsoupUtils;
@@ -34,8 +39,8 @@ public class LudwigmeisterCrawler {
 	private static final Logger logger = LoggerFactory.getLogger(LudwigmeisterCrawler.class);
 	private String domain = "https://www.ludwigmeister.de/de";
 	private String fOut = "data/ludw/";
-	private int numProd = 0;
-	private int numVar = 0;
+	private String fSource = "data/ludw/source/";
+	private int sleepTime = 2000;
 
 	public LudwigmeisterCrawler() {
 		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "100");
@@ -82,10 +87,10 @@ public class LudwigmeisterCrawler {
 	 * @throws TODO
 	 */
 
-	private List<String> parseCates() {
+	public List<String> parseCates() {
 		List<String> cateUrls = new ArrayList<>();
 
-		Document doc = JsoupUtils.getDoc(this.domain);
+		Document doc = JsoupUtils.getDoc(this.domain, this.sleepTime);
 		if (doc == null) {
 			return cateUrls;
 		}
@@ -107,10 +112,10 @@ public class LudwigmeisterCrawler {
 	 * @throws TODO
 	 */
 
-	private List<String> parseSubCates(String cateUrl) {
+	public List<String> parseSubCates(String cateUrl) {
 		List<String> subCateUrls = new ArrayList<>();
 
-		Document doc = JsoupUtils.getDoc(cateUrl);
+		Document doc = JsoupUtils.getDoc(cateUrl, this.sleepTime);
 		if (doc == null) {
 			return subCateUrls;
 		}
@@ -123,8 +128,8 @@ public class LudwigmeisterCrawler {
 		return subCateUrls;
 	}
 
-	private boolean isSubCate(String prodUrl) {
-		Document doc = JsoupUtils.getDoc(prodUrl);
+	public boolean isSubCate(String prodUrl) {
+		Document doc = JsoupUtils.getDoc(prodUrl, this.sleepTime);
 		// String name = doc.select(".bordered .breadcrumb").text();
 		String textNum = doc.select("#results-label").text();
 		if (textNum.isEmpty()) {
@@ -176,13 +181,18 @@ public class LudwigmeisterCrawler {
 		}
 		long start2 = System.currentTimeMillis();
 		logger.info("Total Time Get Category: " + (start2 - start) / 1000 + " ms");
+	}
+
+	public void getProdInfos(File fProd) {
+		long start2 = System.currentTimeMillis();
+		WebDriver d = new PhantomJSDriver();
 		try {
 			List<String> lines = FileUtils.readLines(fProd);
 			int countProd = 0;
 			for (String line : lines) {
 				String toks[] = line.split("\t");
 				if (toks.length == 2) {
-					parseProd(toks[1]);
+					parseProd(toks[1], d);
 				}
 				if (countProd++ % 1000 == 0) {
 					logger.info("Product: " + countProd + "/" + lines.size());
@@ -191,13 +201,40 @@ public class LudwigmeisterCrawler {
 		} catch (IOException e) {
 			logger.error("Read File FAIL. File: " + fOut + fProd, e);
 		}
+		d.close();
 		long start3 = System.currentTimeMillis();
 		logger.info("Total Time Get Product: " + (start3 - start2) / 1000 + " ms");
-		logger.info("FINISH APP");
+		logger.info("FINISH APP GET PRODUCT INFO");
 	}
 
-	private void parseProd(String prodLink) {
-		Document doc = JsoupUtils.getDoc(prodLink, null,2000);
+	public void parseProd(String prodLink) {
+		WebDriver d = new PhantomJSDriver();
+		parseProd(prodLink, d);
+		d.close();
+	}
+
+	public void parseProd(String prodLink, WebDriver d) {
+		boolean isClosePhantom = false;
+		if (d == null) {
+			d = new PhantomJSDriver();
+			isClosePhantom = true;
+		}
+		String html = JsoupUtils.getHtmlByPhantom(prodLink, d, this.sleepTime);
+		String nfProdLink = prodLink.replace("/", "-");
+		try {
+			FileUtils.write(new File(fSource + nfProdLink + ".html"), html);
+		} catch (IOException e) {
+			logger.error("File not found", e);
+		}
+		Document doc = JsoupUtils.getDocBySource(html);
+		// Map<String, String> headers = new HashMap<>();
+		// headers.put("Accept",
+		// "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+		// headers.put("Connection", "keep-alive");
+		// headers.put("Host", "www.ludwigmeister.de");
+		// headers.put("Cookie", "PHPSESSID=8iu8gmqhjcnkhq32dt5mueit13;");
+		// headers.put("Cache-Control", "max-age=0");
+		// Document doc = JsoupUtils.getDoc(prodLink, null, this.sleepTime);
 		if (doc == null) {
 			logger.error(String.format("Parse Document FAIL. Link: %s", prodLink));
 			return;
@@ -210,12 +247,11 @@ public class LudwigmeisterCrawler {
 			nameCates.add(el.text());
 		}
 		String category = String.join(">", nameCates);
-		Elements els = doc.select(".artikeldetailinfo ul");
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("Preis inkl. MwSt.", els.select("li:first-child.preis .right").text());
-		jsonObj.put("Standardpreis inkl. MwSt.", els.select(".listpricegross .preis").text());
-		jsonObj.put("Preis exkl. MwSt.", els.select(".preis.alternative .right").text());
-		jsonObj.put("Product Variable", els.select(".verfuegbar").text());
+		jsonObj.put("Preis inkl. MwSt.", doc.select(".artikeldetailinfo ul li:first-child.preis .right").text());
+		jsonObj.put("Standardpreis inkl. MwSt.", doc.select(".artikeldetailinfo ul .listpricegross .preis").text());
+		jsonObj.put("Preis exkl. MwSt.", doc.select(".artikeldetailinfo ul .preis.alternative .right").text());
+		jsonObj.put("Product Variable", doc.select(".verfuegbarkeit .verfuegbarkeit").text());
 
 		JSONObject jsonDetailObj = new JSONObject();
 		Elements detailEls = doc.select(".technischedaten .list ul li");
@@ -227,23 +263,19 @@ public class LudwigmeisterCrawler {
 		DSFileUtils.write(
 				String.join("\t", prodLink, title, desc, category, jsonObj.toString(), jsonDetailObj.toString()),
 				fOut + "ludw.prod.tsv", true);
+		if (isClosePhantom) {
+			d.close();
+		}
 	}
 
 	public Set<String> getProdsFromCate(String cateLink) {
 		// cateLink =
 		// "https://www.ludwigmeister.de/produkte/gehaeusezubehoer/52162";
 		Set<String> prodLinks = new HashSet<>();
-		Document doc = JsoupUtils.getDoc(cateLink);
+		Document doc = JsoupUtils.getDoc(cateLink, this.sleepTime);
 		String label = doc.select("#results-label").text();
 		logger.info(String.format("CateLink: %s , Label: %s", cateLink, label));
-		String sProd = label.substring(label.indexOf("Produkten"), label.indexOf("Varianten")).replace("mit", "")
-				.replace("Produkten", "").replaceAll("\\s+", "").trim().replaceAll("\\s+", "").trim();
-		int nProd = 0;
-		try {
-			nProd = Integer.parseInt(sProd);
-		} catch (Exception e) {
-			logger.error("Parse Label False. Label: " + label + ", Link: " + cateLink, e);
-		}
+		int nProd = getNumberProd(label);
 		Elements els = doc.select(".produktkachel");
 		for (Element el : els) {
 			String prodLink = el.absUrl("data-href");
@@ -267,7 +299,7 @@ public class LudwigmeisterCrawler {
 			int maxPage = Math.abs(nProd / bufSize) + 1;
 			for (int indexPage = 2; indexPage <= maxPage; indexPage++) {
 				String url = cateLink + "?page=" + indexPage;
-				doc = JsoupUtils.getDoc(url);
+				doc = JsoupUtils.getDoc(url, this.sleepTime);
 				els = doc.select(".produktkachel");
 				for (Element el : els) {
 					String prodLink = el.absUrl("data-href");
@@ -277,14 +309,14 @@ public class LudwigmeisterCrawler {
 					} else {
 						prodLinks.addAll(getProdsFromSubcate(prodLink));
 					}
-					prodLinks.add(el.absUrl("href"));
+					// prodLinks.add(el.absUrl("href"));
 				}
 			}
 		} else {
 			int indexPage = 2;
 			do {
 				String url = cateLink + "?page=" + indexPage;
-				doc = JsoupUtils.getDoc(url);
+				doc = JsoupUtils.getDoc(url, this.sleepTime);
 				els = doc.select(".produktkachel");
 				for (Element el : els) {
 					String prodLink = el.absUrl("data-href");
@@ -310,16 +342,9 @@ public class LudwigmeisterCrawler {
 
 	public Set<String> getProdsFromSubcate(String subCateLink) {
 		Set<String> prodLinks = new HashSet<>();
-		Document doc = JsoupUtils.getDoc(subCateLink);
+		Document doc = JsoupUtils.getDoc(subCateLink, this.sleepTime);
 		String label = doc.select("#results-label").text();
-		String sProd = label.substring(label.indexOf("von"), label.length() - 1);
-		sProd = sProd.replace("von", "").trim();
-		int nProd = 0;
-		try {
-			nProd = Integer.parseInt(sProd);
-		} catch (Exception e) {
-			logger.error("Parse Label False. Label: " + label + ", Link: " + subCateLink, e);
-		}
+		int nProd = getNumberVariant(label);
 
 		logger.info(String.format("SubCateLink: %s , Label: %s", subCateLink, label));
 
@@ -340,7 +365,7 @@ public class LudwigmeisterCrawler {
 			int maxPage = Math.abs(nProd / bufSize) + 1;
 			for (int indexPage = 2; indexPage <= maxPage; indexPage++) {
 				String url = subCateLink + "?page=" + indexPage;
-				doc = JsoupUtils.getDoc(url);
+				doc = JsoupUtils.getDoc(url, this.sleepTime);
 				els = doc.select(".produktdetailzeile .column-title a");
 				for (Element el : els) {
 					String prodLink = el.absUrl("href");
@@ -356,7 +381,7 @@ public class LudwigmeisterCrawler {
 			int indexPage = 2;
 			do {
 				String url = subCateLink + "?page=" + indexPage;
-				doc = JsoupUtils.getDoc(url);
+				doc = JsoupUtils.getDoc(url, this.sleepTime);
 				els = doc.select(".produktdetailzeile .column-title a");
 				for (Element el : els) {
 					String prodLink = el.attr("href");
@@ -374,6 +399,33 @@ public class LudwigmeisterCrawler {
 		logger.info(String.format("SubCateLink: %s , NumSubProd: %d", subCateLink, prodLinks.size()));
 
 		return prodLinks;
+	}
+
+	private int getNumberProd(String textNum) {
+		int nProd = 0;
+		try {
+			String textProd = textNum.substring(textNum.indexOf("von"), textNum.indexOf("Produkten")).replace("von", "")
+					.replaceAll("\\s+", "").trim();
+			nProd = Integer.parseInt(textProd);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return nProd;
+	}
+
+	private int getNumberVariant(String textNum) {
+		int nVariant = 0;
+		try {
+			String textVar = textNum.substring(textNum.indexOf("Produkten"), textNum.indexOf("Varianten"))
+					.replace("mit", "").replace("Produkten", "").replaceAll("\\s+", "").trim().replaceAll("\\s+", "")
+					.trim();
+			nVariant = Integer.parseInt(textVar);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return nVariant;
 	}
 
 	public void convertOutputToTsv() {
@@ -427,9 +479,9 @@ public class LudwigmeisterCrawler {
 	// }
 
 	public static void main(String[] args) {
-//		args = new String[] { "-t", "cate" };
-		// args = new String[] { "-t", "prod", "-i",
-		// "data/ludw/ludw.cate.06.txt" };
+		// args = new String[] { "-t", "cate" };
+		// args = new String[] { "-t", "prod-info", "-i",
+		// "data/ludw/ludw.prod.link.tsv" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 
 		CommandLineParser parser = new DefaultParser();
@@ -473,6 +525,25 @@ public class LudwigmeisterCrawler {
 				return;
 			}
 			ludwig.getProductLinks(fIn);
+		} else if (type.equals("prod-info")) {
+			if (!cmd.hasOption("i")) {
+				logger.error("Don't have option input");
+				formatter.printHelp("Ludwig", options);
+				return;
+			}
+			String sIn = cmd.getOptionValue("i");
+			if (sIn == null) {
+				logger.error("File input not null: " + sIn);
+				formatter.printHelp("Ludwig", options);
+				return;
+			}
+			File fIn = new File(sIn);
+			if (!fIn.exists()) {
+				logger.error("File not FOUND: " + sIn);
+				formatter.printHelp("Ludwig", options);
+				return;
+			}
+			ludwig.getProdInfos(fIn);
 		}
 
 		System.out.println("FINISH");

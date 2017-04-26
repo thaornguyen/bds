@@ -3,12 +3,20 @@ package vn.com.dsvn.utils;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.http.client.fluent.Request;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,19 +34,111 @@ public class JsoupUtils {
 	 * @return html text with marker
 	 */
 	public static String getHtml(String url, int sleepTime) {
+		long start = System.currentTimeMillis();
 		try {
-			return getDoc(url, null, sleepTime).html();
+			Request request = Request.Get(url);
+			sleep(2000);
+			String html = request.userAgent(USER_AGENT).connectTimeout(TIMEOUT).execute().returnContent()
+					.asString(Charset.forName("UTF-8"));
+			sleep(sleepTime);
+			long finish = System.currentTimeMillis();
+			logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
+			return html;
 		} catch (Exception e) {
+			long finish = System.currentTimeMillis();
+			String err = e.toString();
+			String status = err.replaceAll(".*Status=(\\d+).*", "$1");
+			logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url), e);
 			return "";
 		}
-	} // end method
+	} // end
+
+	public static String getHtmlByPhantom(String url, int sleepTime) {
+		long start = System.currentTimeMillis();
+		try {
+			WebDriver d = new PhantomJSDriver();
+			d.get(url);
+			d.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
+
+			// Predicate<WebDriver> pageLoaded = wd -> ((JavascriptExecutor) wd)
+			// .executeScript("return document.readyState").equals("complete");
+			// new FluentWait<WebDriver>(d).until(pageLoaded);
+			String html = d.getPageSource();
+			long finish = System.currentTimeMillis();
+			logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
+			d.close();
+			return html;
+		} catch (Exception e) {
+			long finish = System.currentTimeMillis();
+			String err = e.toString();
+			String status = err.replaceAll(".*Status=(\\d+).*", "$1");
+			logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url), e);
+			return "";
+		}
+	} // end
+
+	public static String getHtmlByPhantom(String url, WebDriver d, int sleepTime) {
+		long start = System.currentTimeMillis();
+		try {
+			d.get(url);
+			// d.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
+
+			// Predicate<WebDriver> pageLoaded = wd -> ((JavascriptExecutor) wd)
+			// .executeScript("return document.readyState").equals("complete");
+			// new FluentWait<WebDriver>(d).until(pageLoaded);
+
+			// WebDriverWait wait = new WebDriverWait(d, 30);
+			//
+			// wait.until(new ExpectedCondition<Boolean>() {
+			// public Boolean apply(WebDriver wdriver) {
+			// return ((JavascriptExecutor) d).executeScript(
+			// "return document.readyState"
+			// ).equals("complete");
+			// }
+			// });
+
+			// long end = System.currentTimeMillis() + 5000;
+			// while (System.currentTimeMillis() < end) {
+			// // Browsers which render content (such as Firefox and IE) return
+			// "RenderedWebElements"
+			// RenderedWebElement resultsDiv = (RenderedWebElement)
+			// driver.findElement(By.className("gac_m"));
+			//
+			// // If results have been returned, the results are displayed in a
+			// drop down.
+			// if (resultsDiv.isDisplayed()) {
+			// break;
+			// }
+			// }
+			d.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
+			String html = d.getPageSource();
+			long finish = System.currentTimeMillis();
+			logger.info(String.format("REQUEST_URL (%d ms): %s", (finish - start), url));
+			sleep(sleepTime);
+			// d.close();
+			return html;
+		} catch (Exception e) {
+			long finish = System.currentTimeMillis();
+			String err = e.toString();
+			String status = err.replaceAll(".*Status=(\\d+).*", "$1");
+			logger.error(String.format("ERROR_%s (%d ms): %s", status, (finish - start), url), e);
+			return "";
+		}
+	} // end
+
+	public static Document getDocBySource(String source) {
+		Document doc = Jsoup.parse(source);
+		return doc;
+	}
 
 	public static Document getDoc(String url, int sleepTime) {
 		return getDoc(url, null, sleepTime);
 	}
+
 	public static Document getDoc(String url) {
 		return getDoc(url, null, 2000);
 	}
+
 	public static Document getDoc(String url, Map<String, String> headers, int sleepTime) {
 		URI uri = null;
 		try {
