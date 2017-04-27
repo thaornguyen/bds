@@ -147,6 +147,12 @@ public class ZitecTest {
 		zitec.parseProductLinks(cateLink);
 	}
 
+	public static void getProdLink() {
+		String prodLink = "https://www.zitec-shop.de/index.php?P=pro&NR=835&RestoreSearch=403482609&MSI=10";
+		ZitecShop zitec = new ZitecShop();
+		zitec.parseProd(prodLink);
+	}
+
 	public static void testGetProdLink() throws IOException {
 		ZitecShop zitec = new ZitecShop("conf/zitec03.properties");
 		File fProd = new File("data/zitec_2/zitec.prod.link2.tsv");
@@ -272,12 +278,7 @@ public class ZitecTest {
 	public static void main(String[] args) {
 		ZitecTest zitec = new ZitecTest();
 		// check();
-		try {
-			removeDuplicate();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		getProdLink();
 		// try {
 		//// statisTest();
 		// splitCate();

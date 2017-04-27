@@ -267,7 +267,7 @@ public class ZitecShop {
 		return prodLinks;
 	}
 
-	private void parseProd(String prodLink) {
+	public void parseProd(String prodLink) {
 		Document doc = JsoupUtils.getDoc(prodLink, null, this.sleepTime);
 		if (doc == null) {
 			logger.error(String.format("Parse Document FAIL. Link: %s", prodLink));
@@ -359,8 +359,11 @@ public class ZitecShop {
 	}
 
 	public void convertOutputToTsv() {
-		String fProd = fOut + "zitec.prod.json.tsv";
-		String fProdOk = fOut + "zitec.prod.ok.tsv";
+//		String fProd = fOut + "zitec.prod.json.tsv";
+//		String fProdOk = fOut + "zitec.prod.ok.tsv";
+		String fProd = "/home/thaonp/Desktop/zitec_data/zitec_result_20170426/zitec_result_filter_20170426/zitec.prod.json.ok.tsv";
+		String fProdOk = "/home/thaonp/Desktop/zitec_data/zitec_result_20170426/zitec_result_filter_20170426/zitec.prod.ok.tsv";
+		
 		Set<String> setKeys = new HashSet<>();
 		try (Stream<String> stream = Files.lines(Paths.get(fProd))) {
 			stream.forEach(line -> {

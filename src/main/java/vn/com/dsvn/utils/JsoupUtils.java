@@ -13,10 +13,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,20 +93,16 @@ public class JsoupUtils {
 			// ).equals("complete");
 			// }
 			// });
-
-			// long end = System.currentTimeMillis() + 5000;
-			// while (System.currentTimeMillis() < end) {
-			// // Browsers which render content (such as Firefox and IE) return
-			// "RenderedWebElements"
-			// RenderedWebElement resultsDiv = (RenderedWebElement)
-			// driver.findElement(By.className("gac_m"));
-			//
-			// // If results have been returned, the results are displayed in a
-			// drop down.
-			// if (resultsDiv.isDisplayed()) {
-			// break;
-			// }
-			// }
+//
+//			 long end = System.currentTimeMillis() + 5000;
+//				 while (System.currentTimeMillis() < end) {
+//					 RenderedWebElement resultsDiv = (RenderedWebElement)
+//					 driver.findElement(By.className("gac_m"));
+//				 // If results have been returned, the results are displayed in a
+//					 if (resultsDiv.isDisplayed()) {
+//						 break;
+//					 }
+//				 }
 			d.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
 			String html = d.getPageSource();
 			long finish = System.currentTimeMillis();

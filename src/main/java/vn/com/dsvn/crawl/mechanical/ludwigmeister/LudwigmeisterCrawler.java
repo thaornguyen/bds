@@ -219,6 +219,7 @@ public class LudwigmeisterCrawler {
 			isClosePhantom = true;
 		}
 		String html = JsoupUtils.getHtmlByPhantom(prodLink, d, this.sleepTime);
+//		String html = JsoupUtils.getHtml(prodLink, sleepTime);
 		String nfProdLink = prodLink.replace("/", "-");
 		try {
 			FileUtils.write(new File(fSource + nfProdLink + ".html"), html);
@@ -428,15 +429,19 @@ public class LudwigmeisterCrawler {
 	}
 
 	public void convertOutputToTsv() {
-		String fProd = fOut + "zitec.prod.tsv";
-		String fProdOk = fOut + "zitec.prod.ok.tsv";
+		String fProd =  "/home/thaonp/Desktop/ludw_QA/ludw_result_20170427/ludw.prod.json.ok.tsv";
+		String fProdOk =  "/home/thaonp/Desktop/ludw_QA/ludw_result_20170427/ludw.prod.ok.tsv";
+//		String fProd = fOut + "ludw.prod.ok.tsv";
+//		String fProdOk = fOut + "ludw.prod.output.tsv";
 		Set<String> setKeys = new HashSet<>();
 		try (Stream<String> stream = Files.lines(Paths.get(fProd))) {
 			stream.forEach(line -> {
 				String toks[] = line.split("\t");
-				if (toks.length == 4) {
-					JSONObject jsonObj = new JSONObject(toks[3]);
+				if (toks.length == 6) {
+					JSONObject jsonObj = new JSONObject(toks[5]);
 					setKeys.addAll(jsonObj.keySet());
+				}else{
+					System.out.println(line);
 				}
 			});
 		} catch (IOException e) {
@@ -446,20 +451,26 @@ public class LudwigmeisterCrawler {
 		listKeys.addAll(setKeys);
 		Collections.sort(listKeys);
 		StringBuilder header = new StringBuilder();
-		header.append(String.join("\t", "URL", "Name", "Outline"));
+		header.append(String.join("\t", "URL", "Title", "Description", "Outline", "Product_Variable",
+				"Standardpreis inkl. MwSt.", "Preis exkl. MwSt.", "Preis inkl. MwSt."));
 		header.append("\t" + String.join("\t", listKeys));
 		DSFileUtils.write(header.toString(), fProdOk, false);
 		try (Stream<String> stream = Files.lines(Paths.get(fProd))) {
 			stream.forEach(line -> {
 				String toks[] = line.split("\t");
-				if (toks.length == 4) {
+				if (toks.length == 6) {
 					StringBuilder builder = new StringBuilder();
-					builder.append(String.join("\t", toks[0], toks[1], toks[2]));
-					JSONObject jsonObj = new JSONObject(toks[3]);
+					builder.append(String.join("\t", toks[0], toks[1], toks[2], toks[3]));
+					JSONObject jsonObj = new JSONObject(toks[4]);
+					builder.append("\t" + jsonObj.getString("Product Variable"));
+					builder.append("\t" + jsonObj.getString("Standardpreis inkl. MwSt."));
+					builder.append("\t" + jsonObj.getString("Preis exkl. MwSt."));
+					builder.append("\t" + jsonObj.getString("Preis inkl. MwSt."));
+					JSONObject jsonObjDetail = new JSONObject(toks[5]);
 					for (String key : listKeys) {
 						builder.append("\t");
-						if (jsonObj.has(key)) {
-							builder.append(jsonObj.get(key));
+						if (jsonObjDetail.has(key)) {
+							builder.append(jsonObjDetail.get(key));
 						}
 					}
 					DSFileUtils.write(builder.toString(), fProdOk, true);
@@ -478,9 +489,9 @@ public class LudwigmeisterCrawler {
 	// }
 
 	public static void main(String[] args) {
-		// args = new String[] { "-t", "cate" };
-		// args = new String[] { "-t", "prod-info", "-i",
-		// "data/ludw/ludw.prod.link.tsv" };
+		 args = new String[] { "-t", "convert" };
+		 args = new String[] { "-t", "prod-info", "-i",
+		 "data/ludw/ludw.prod.link.tsv" };
 		LudwigmeisterCrawler ludwig = new LudwigmeisterCrawler();
 
 		CommandLineParser parser = new DefaultParser();
@@ -543,6 +554,8 @@ public class LudwigmeisterCrawler {
 				return;
 			}
 			ludwig.getProdInfos(fIn);
+		}else if (type.equals("convert")) {
+			ludwig.convertOutputToTsv();
 		}
 
 		System.out.println("FINISH");

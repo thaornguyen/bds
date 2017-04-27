@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +55,21 @@ public class LudwTest {
 			Document doc = JsoupUtils.getDoc(cateLink, 0);
 			String label = doc.select("#results-label").text();
 			int numProd = getNumberVariant(label);
-			estimates.add(cateLink + "\t" + numProd);
+			Elements els = doc.select(".breadcrumb");
+			StringBuilder builder = new StringBuilder();
+			for (Element el : els) {
+				String text = el.select("li").text();
+				builder.append(text + " > ");
+			}
+			estimates.add(cateLink + "\t" + numProd+"\t"+builder.toString());
 		});
 		DSFileUtils.writeLine(estimates, "/home/thaonp/Desktop/ludw_QA/estimation.tsv", false);
-//		List<List<String>> smallerLists = Lists.partition(cateLinks, Math.abs(cateLinks.size() / 14) + 1);
-//		for (int i = 0; i < smallerLists.size(); i++) {
-//			DSFileUtils.writeLine(smallerLists.get(i), fOut + "zitec.cate." + (i + 1) + ".txt", false);
-//		}
+		// List<List<String>> smallerLists = Lists.partition(cateLinks,
+		// Math.abs(cateLinks.size() / 14) + 1);
+		// for (int i = 0; i < smallerLists.size(); i++) {
+		// DSFileUtils.writeLine(smallerLists.get(i), fOut + "zitec.cate." + (i
+		// + 1) + ".txt", false);
+		// }
 	}
 
 	public static void statisTest() throws IOException {
@@ -131,7 +140,7 @@ public class LudwTest {
 	}
 
 	public static void parseProductLink() {
-		String prodLink = "https://www.ludwigmeister.de/artikel/flanschlagergehaeuse/52173/fag-dreiloch-flanschlager-gehaeuse-grauguss-dreieckig-fuer-zylindrische-lager/206f11207-1144473";
+		String prodLink = "https://www.ludwigmeister.de/artikel/verschraubungen/38955/parker-fm-eo2-funktionsmutter/851fm30sssa-1658018";
 		LudwigmeisterCrawler ludw = new LudwigmeisterCrawler();
 		ludw.parseProd(prodLink);
 	}
@@ -177,9 +186,12 @@ public class LudwTest {
 
 	public static void splitProd() throws IOException {
 		List<String> prodLinks = FileUtils.readLines(new File("data/ludw/ludw.prod.link.tsv"));
-		List<List<String>> smallerLists = Lists.partition(prodLinks, Math.abs(prodLinks.size() / 5) + 1);
-		for (int i = 0; i < smallerLists.size(); i++) {
-			DSFileUtils.writeLine(smallerLists.get(i), "data/ludw/ludw.prod.link.0" + (i + 6) + ".txt", false);
+		List<List<String>> smallerLists = Lists.partition(prodLinks, Math.abs(prodLinks.size() / 14) + 1);
+		for (int i = 2; i < smallerLists.size() + 2; i++) {
+			if (i < 10)
+				DSFileUtils.writeLine(smallerLists.get(i - 2), "data/ludw/ludw.prod.link.0" + i + ".txt", false);
+			else
+				DSFileUtils.writeLine(smallerLists.get(i - 2), "data/ludw/ludw.prod.link." + i + ".txt", false);
 		}
 	}
 
@@ -271,9 +283,9 @@ public class LudwTest {
 
 	public static void main(String[] args) throws IOException {
 		LudwTest zitec = new LudwTest();
-		// zitec.getCateLinks();
-//		statisTest();
-		splitProd();
+		zitec.getCateLinks();
+		// statisTest();
+		// splitProd();
 		// parseProductLink(); // splitCate();
 
 		// try {
