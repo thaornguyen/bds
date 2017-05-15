@@ -61,7 +61,7 @@ public class LudwTest {
 				String text = el.select("li").text();
 				builder.append(text + " > ");
 			}
-			estimates.add(cateLink + "\t" + numProd+"\t"+builder.toString());
+			estimates.add(cateLink + "\t" + numProd + "\t" + builder.toString());
 		});
 		DSFileUtils.writeLine(estimates, "/home/thaonp/Desktop/ludw_QA/estimation.tsv", false);
 		// List<List<String>> smallerLists = Lists.partition(cateLinks,
@@ -281,9 +281,16 @@ public class LudwTest {
 		FileUtils.writeLines(new File("/home/thaonp/Desktop/ludw_QA/ludw.prod.link.ok.2.tsv"), outs);
 	}
 
+	public static void testProd() {
+		String url = "https://www.ludwigmeister.de/artikel/vhm-bohrer/50420/kleinstbohrer-mikron-vhm-7-x-d/710102457-0136-2669691";
+		LudwigmeisterCrawler crawler = new LudwigmeisterCrawler();
+		crawler.parseProd(url);
+	}
+
 	public static void main(String[] args) throws IOException {
 		LudwTest zitec = new LudwTest();
-		zitec.getCateLinks();
+//		zitec.getCateLinks();
+		testProd();
 		// statisTest();
 		// splitProd();
 		// parseProductLink(); // splitCate();

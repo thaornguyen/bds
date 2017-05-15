@@ -219,6 +219,7 @@ public class LudwigmeisterCrawler {
 			isClosePhantom = true;
 		}
 		String html = JsoupUtils.getHtmlByPhantom(prodLink, d, this.sleepTime);
+		System.out.println(html);
 //		String html = JsoupUtils.getHtml(prodLink, sleepTime);
 		String nfProdLink = prodLink.replace("/", "-");
 		try {
