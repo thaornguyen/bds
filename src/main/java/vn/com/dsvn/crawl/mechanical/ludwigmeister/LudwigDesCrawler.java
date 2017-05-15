@@ -11,10 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import vn.com.dsvn.utils.DSFileUtils;
 import vn.com.dsvn.utils.JsoupUtils;
-import vn.com.dsvn.zitec.LudwTest;
 
 public class LudwigDesCrawler {
-	private static final Logger logger = LoggerFactory.getLogger(LudwTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(LudwigDesCrawler.class);
 	private String fOut = "data/ludw/";
 
 	private void run(String sLink) {
