@@ -37,8 +37,9 @@ public class LudwigDesCrawler {
 	}
 
 	public void parseProd(String prodLink) {
-		String html = JsoupUtils.getHtml(prodLink, 2000);
-		Document doc = JsoupUtils.getDocBySource(html);
+//		String html = JsoupUtils.getHtml(prodLink, 2000);
+//		Document doc = JsoupUtils.getDocBySource(html);
+		Document doc = JsoupUtils.getDoc(prodLink, 2000);
 		if (doc == null) {
 			logger.error(String.format("Parse Document FAIL. Link: %s", prodLink));
 			return;
